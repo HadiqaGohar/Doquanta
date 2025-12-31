@@ -21,8 +21,8 @@ export const env = createEnv({
         GITHUB_CLIENT_SECRET: z.string().optional(),
     },
     client: {
-        NEXT_PUBLIC_BASE_URL: z.string(),
-        NEXT_PUBLIC_API_BASE_URL: z.string(),
+        NEXT_PUBLIC_BASE_URL: z.string().default("http://localhost:3000"),
+        NEXT_PUBLIC_API_BASE_URL: z.string().default("http://localhost:8000"),
     },
     runtimeEnv: {
         NODE_ENV: process.env.NODE_ENV,
