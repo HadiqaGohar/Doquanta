@@ -45,3 +45,42 @@ The project is divided into five distinct phases, each introducing new technolog
 
 ---
 *Created as part of Hackathon II: Mastering Spec-Driven Development & Cloud Native AI.*
+
+
+
+
+
+
+
+
+NEXT_PUBLIC_BASE_URL=http://localhost:3000
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+DATABASE_URL=postgresql://app_user:password@localhost:5432/todo
+NEON_DATABASE_URL=postgresql://neondb_owner:npg_NVYLqfh90crD@ep-dark-fire-ahmpx1jc-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require
+BETTER_AUTH_SECRET=34a1ae44d0ee855ead4ff65390473968
+NODE_ENV=development
+
+# Social Provider Credentials (replace with your actual credentials)
+GOOGLE_CLIENT_ID=204412882328-irim2hcciejgnh8hsl4cc7om4p67v41o.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=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
+GITHUB_CLIENT_ID=Ov23litR2fTzoLVtFHkg
+GITHUB_CLIENT_SECRET=a629de31abcc092ddd1e330c1b0b180cfb1ea828
+
+
+<!-- ............ -->
+
+NEXT_PUBLIC_BASE_URL=http://localhost:3000
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+DATABASE_URL=postgresql://app_user:password@localhost:5432/todo
+NEON_DATABASE_URL=postgresql://neondb_owner:npg_NVYLqfh90crD@ep-dark-fire-ahmpx1jc-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require
+BETTER_AUTH_SECRET=34a1ae44d0ee855ead4ff65390473968
+NODE_ENV=development
+
+# Social Provider Credentials (replace with your actual credentials)
+GOOGLE_CLIENT_ID=204412882328-irim2hcciejgnh8hsl4cc7om4p67v41o.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=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
+GITHUB_CLIENT_ID=Ov23litR2fTzoLVtFHkg
+GITHUB_CLIENT_SECRET=a629de31abcc092ddd1e330c1b0b180cfb1ea828
+

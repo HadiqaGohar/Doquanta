@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  backend:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
+      - JWT_ALGORITHM=${JWT_ALGORITHM:-HS256}
+    depends_on:
+      - db
+    volumes:
+      - .:/app  # For development, remove in production
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=todo
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

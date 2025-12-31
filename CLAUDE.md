@@ -1,42 +1,41 @@
 # Todo App - Hackathon II: The Evolution of Todo
 
 ## Project Overview
-This is a Todo Console Application built as part of Hackathon II: The Evolution of Todo – Mastering Spec-Driven Development & Cloud Native AI. This is Phase I: In-Memory Python Console App.
+This project, "The Evolution of Todo," is a comprehensive journey from a simple CLI to a cloud-native, AI-powered system.
 
 ## Spec-Kit Structure
-Specifications are organized in /specs:
-- /specs/overview.md - Project overview
-- /specs/features/ - Feature specs (what to build)
-- /specs/api/ - API specifications
-- /specs/database/ - Database specifications (for future phases)
-- /specs/ui/ - UI specifications (for future phases)
+Specifications are organized in `/specs`:
+- `/specs/001-phase-1/` - In-Memory Python Console App
+- `/specs/002-phase-2/` - Full-Stack Web Application
 
 ## How to Use Specs
-1. Always read relevant spec before implementing
-2. Reference specs with: @specs/001-todo-app-backend/spec.md
-3. Update specs if requirements change
+1. Always read relevant spec before implementing.
+2. Reference current phase specs: e.g., `@specs/002-phase-2/spec.md`.
+3. Update specs if requirements change.
 
-## Project Structure
-- /todo-backend - Python console application
-- /specs - Specification files for spec-driven development
-- /history - Historical plan documentation
+## Monorepo Structure
+- `/backend` - Python FastAPI REST API.
+- `/frontend` - Next.js 16+ Web Application.
+- `/specs` - Specification files for spec-driven development.
 
 ## Development Workflow
-1. Read spec: @specs/001-todo-app-backend/spec.md
-2. Follow plan: @specs/001-todo-app-backend/plan.md
-3. Execute tasks: @specs/001-todo-app-backend/tasks.md
-4. Implement following SDD lifecycle: Specify → Plan → Tasks → Implement
+1. **Specify**: Define requirements in `spec.md`.
+2. **Plan**: Outline architecture and steps in `plan.md`.
+3. **Tasks**: Break down implementation in `tasks.md`.
+4. **Implement**: Execute code changes based on tasks, strictly following "No Manual Coding".
 
-## Commands
-- Run app: cd todo-backend && python main.py [command]
-- Add task: python main.py add "title" "description"
-- List tasks: python main.py list
-- Update task: python main.py update [id] "title" "description"
-- Delete task: python main.py delete [id]
-- Complete task: python main.py complete [id]
+## Backend Commands (Python/FastAPI)
+- Start server: `cd backend && uvicorn src.main:app --reload`
+- Install dependencies: `cd backend && uv sync`
+- Run tests: `cd backend && pytest`
 
-## Phase I Requirements
-- Implement all 5 Basic Level features (Add, Delete, Update, View, Mark Complete)
-- Use spec-driven development with Claude Code and Spec-Kit Plus
-- Follow clean code principles and proper Python project structure
-- Store tasks in memory (Phase I requirement)
+## Frontend Commands (Next.js)
+- Start development: `cd frontend && npm run dev`
+- Install dependencies: `cd frontend && npm install`
+- Build: `cd frontend && npm run build`
+
+## Phase II Requirements
+- Full-Stack Web App with Next.js & FastAPI.
+- Persistent storage using Neon Serverless PostgreSQL.
+- Authentication using Better Auth with JWT tokens.
+- Strict data isolation between users.

@@ -1,0 +1,2 @@
+CREATE USER app_user WITH PASSWORD 'password';
+GRANT ALL PRIVILEGES ON DATABASE todo TO app_user;

@@ -45,7 +45,7 @@ Recurring Tasks – Auto-reschedule repeating tasks (e.g., "weekly meeting")
 Due Dates & Time Reminders – Set deadlines with date/time pickers; browser notifications
 Use Agentic Dev Stack for building this hackathon project.
 Hackathon Phases Overview
-Phase
+Phasetodo
 Description
 Technology Stack
 Points

@@ -19,10 +19,13 @@ Follow-up TODOs: None
 Every feature and modification MUST follow the Spec-Driven Development lifecycle: Specify → Plan → Tasks → Implement. No code is to be generated or modified until the specification is complete, approved, and broken down into atomic tasks. This ensures alignment, prevents "vibe coding," and guarantees traceability from requirements to implementation.
 
 ### II. AI-Native & Agentic Development
-AI agents, including Claude Code, OpenAI Agents SDK, and MCP SDK, are primary tools for development. This project mandates the intelligent use of AI-assisted tools for Docker operations (Gordon), Kubernetes operations (kubectl-ai, kagent), and specification management (Spec-Kit Plus). Agents MUST adhere to their defined roles and responsibilities within the Agentic Dev Stack.
+AI agents, including Claude Code, OpenAI Agents SDK with GEMINI_API_KEY, and MCP SDK, are primary tools for development. This project mandates the intelligent use of AI-assisted tools for Docker operations (Gordon), Kubernetes operations (kubectl-ai, kagent), and specification management (Spec-Kit Plus). Agents MUST adhere to their defined roles and responsibilities within the Agentic Dev Stack.
+
 
 ### III. Iterative & Phased Evolution
 The project will evolve through distinct phases, starting from a basic in-memory console application and progressing to a fully-featured, cloud-native AI chatbot. Each phase builds upon the previous, requiring a clear understanding and implementation of its specific objectives and technology stack.
+Mera new idea ye he ke ham dashbord se quick task add hata den jo ke me already hata chuki hon hon ab ham ye karengy gy ke phase 3 jab bnaengy to
+  usme wese bhi chatbot se task add karwana he tab hi isko dekhengy with alarm functionality google chrome se 5 mint pehly alarm bajy 
 
 ### IV. Cloud-Native First
 Architecture and deployment MUST prioritize cloud-native principles, utilizing Docker for containerization, Kubernetes (Minikube, DOKS) for orchestration, Helm Charts for package management, Kafka for event-driven architecture, and Dapr for distributed application runtime. Solutions should be designed for scalability, resilience, and maintainability in a cloud environment.
