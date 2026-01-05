@@ -5,6 +5,7 @@ from src.models.models import Task  # Import the Task model from the correct loc
 from src.db.session import engine  # Import the engine from session module if available
 import logging
 
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

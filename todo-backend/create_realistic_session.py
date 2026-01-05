@@ -4,6 +4,7 @@ Script to insert a realistic test session into the database for testing purposes
 This creates a session with a token that mimics Better Auth's format.
 """
 
+
 import logging
 from sqlmodel import create_engine, Session
 from src.core.settings import settings

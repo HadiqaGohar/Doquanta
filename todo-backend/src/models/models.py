@@ -7,6 +7,7 @@ class User(SQLModel, table=True):
     """User model (managed by Better Auth in frontend, but referenced in backend)."""
     id: str = Field(primary_key=True)
     email: str = Field(unique=True, index=True)
+    
     name: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 

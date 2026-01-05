@@ -3,6 +3,7 @@
 Script to insert a test session into the database for testing purposes.
 """
 
+
 import logging
 from sqlmodel import create_engine, Session, select
 from src.core.settings import settings

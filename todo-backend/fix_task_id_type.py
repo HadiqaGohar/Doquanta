@@ -7,6 +7,7 @@ import logging
 from sqlmodel import create_engine, text
 from src.core.settings import settings
 
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

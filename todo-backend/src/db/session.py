@@ -2,6 +2,7 @@ from sqlmodel import create_engine, Session
 from src.core.settings import settings
 from contextlib import contextmanager
 
+
 # Create the database engine
 engine = create_engine(
     settings.database_url,

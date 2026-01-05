@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     # Database settings
     database_url: str 
 
+
     # Better Auth settings
     better_auth_secret: str
     jwt_algorithm: str = "HS256"

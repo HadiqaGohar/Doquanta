@@ -9,6 +9,7 @@ from typing import List, Dict, Optional
 from enum import Enum
 
 
+
 class Category(Enum):
     WORK = "work"
     PERSONAL = "personal"

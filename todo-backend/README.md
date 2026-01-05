@@ -4,6 +4,7 @@ A full-stack todo application with persistent storage using PostgreSQL. This is 
 
 ## Features
 
+
 - Add, delete, update, view, and mark tasks as complete
 - Persistent storage using PostgreSQL database
 - RESTful API endpoints

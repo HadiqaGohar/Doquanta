@@ -9,6 +9,7 @@ from ..core.security import get_current_user_id
 from uuid import uuid4
 
 
+
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
 

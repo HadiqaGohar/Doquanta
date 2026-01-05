@@ -10,6 +10,7 @@ import datetime
 import traceback
 import base64
 
+
 security = HTTPBearer()
 
 def verify_token(token: str) -> Optional[dict]:

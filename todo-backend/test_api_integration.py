@@ -7,6 +7,7 @@ from jose import jwt
 import json
 import os
 
+
 # Create a test client for the FastAPI app
 client = TestClient(app)
 

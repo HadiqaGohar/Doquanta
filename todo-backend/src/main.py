@@ -10,6 +10,7 @@ from .api.notifications import router as notifications_router
 from .api.websocket import websocket_endpoint
 from .core.settings import settings
 
+
 app = FastAPI(
     title=settings.app_name,
     version=settings.version,

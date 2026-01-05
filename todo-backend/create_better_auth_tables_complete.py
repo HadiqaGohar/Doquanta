@@ -5,6 +5,7 @@ Better Auth creates these tables when using it directly, but since we're handlin
 authentication in the backend separately, we need to create these tables manually.
 """
 
+
 import logging
 from sqlmodel import create_engine, text
 from src.core.settings import settings

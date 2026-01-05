@@ -3,6 +3,7 @@
 Script to fix the session table structure to match Better Auth expectations.
 """
 
+
 import logging
 from sqlmodel import create_engine, text
 from src.core.settings import settings

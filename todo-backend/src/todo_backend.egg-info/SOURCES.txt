@@ -7,6 +7,7 @@ src/api/notifications.py
 src/api/reminders.py
 src/api/tasks.py
 src/api/websocket.py
+
 src/chatbot/mcp_server.py
 src/core/security.py
 src/core/settings.py

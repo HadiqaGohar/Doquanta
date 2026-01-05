@@ -12,6 +12,7 @@ from ..chatbot.mcp_server import call_tool
 
 logger = logging.getLogger(__name__)
 
+
 class MCPTodoService:
     """
     Service class to handle MCP tool execution for todo operations.

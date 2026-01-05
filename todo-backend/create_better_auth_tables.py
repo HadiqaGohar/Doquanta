@@ -5,6 +5,7 @@ This addresses the 'jwks' table missing error that occurs when using Better Auth
 """
 
 import logging
+
 from sqlmodel import create_engine, text
 from src.core.settings import settings
 

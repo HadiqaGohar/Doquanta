@@ -10,6 +10,7 @@ Requires-Dist: pydantic>=2.12.5
 Requires-Dist: pydantic-settings>=2.12.0
 Requires-Dist: python-dotenv>=1.2.1
 Requires-Dist: python-jose[cryptography]>=3.5.0
+
 Requires-Dist: sqlmodel>=0.0.27
 Requires-Dist: uvicorn[standard]>=0.38.0
 Requires-Dist: openai-agents>=0.1.0

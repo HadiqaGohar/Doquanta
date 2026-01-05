@@ -7,3 +7,4 @@ python-jose[cryptography]>=3.5.0
 sqlmodel>=0.0.27
 uvicorn[standard]>=0.38.0
 openai-agents>=0.1.0
+
