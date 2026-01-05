@@ -5,6 +5,7 @@ import { useAuth } from "@/features/auth/hooks";
 
 
 export function SignOutButton() {
+  
   const { signOut: {
     mutateAsync: signOut,
     isPending: isLoading,

@@ -4,6 +4,7 @@ import { nextCookies } from "better-auth/next-js";
 import { Pool } from "pg";
 import { env } from "@/utils/env";
 
+
 // Create a singleton pool to avoid multiple connections
 let pool: Pool | null = null;
 

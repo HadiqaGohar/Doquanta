@@ -10,6 +10,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    
     // Ensure session is registered with backend
     await ensureSessionRegistered();
 

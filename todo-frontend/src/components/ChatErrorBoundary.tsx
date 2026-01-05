@@ -14,6 +14,7 @@ interface State {
 class ChatErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
+    
   };
 
   public static getDerivedStateFromError(error: Error): State {

@@ -46,6 +46,7 @@ export default function Footer() {
             © {currentYear} DoQuanta - Stay Productive
           </div>
           <button
+          
             onClick={scrollToTop}
             className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm group"
             aria-label="Scroll to top"

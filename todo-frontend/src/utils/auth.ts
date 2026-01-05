@@ -81,7 +81,8 @@ export async function ensureSessionRegistered() {
       body: JSON.stringify({
         user_id: userId,
         token: sessionToken,
-        expires_at: session.session.expiresAt
+        expires_at: session.session.
+        expiresAt
       }),
     });
 

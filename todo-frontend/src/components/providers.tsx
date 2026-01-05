@@ -7,6 +7,7 @@ export const ReactQueryClientProvider = ({ children }: { children: React.ReactNo
   const [queryClient] = useState(
     () =>
       new QueryClient({
+        
         defaultOptions: {
           queries: {
             // With SSR, we usually want to set some default staleTime

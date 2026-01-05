@@ -7,6 +7,7 @@ import { useTasks } from '@/features/tasks/hooks';
 import { categoryOptions, priorityOptions } from '@/features/tasks/config';
 import { TaskCategory, TaskPriority } from '@/features/tasks/types';
 
+
 export default function AddTodo() {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('other');

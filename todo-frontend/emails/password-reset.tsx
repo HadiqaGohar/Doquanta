@@ -12,6 +12,7 @@ import {
 } from "@react-email/components";
 import { CoffeeIcon } from "lucide-react";
 
+
 interface PasswordResetEmailProps {
   userName?: string;
   resetLink: string;

@@ -2,9 +2,9 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Send, X, MessageCircle, Mic, Paperclip, Maximize, Minimize, Menu, Plus, Moon, Sun } from 'lucide-react';
-import { useUser } from '../features/auth/hooks';
+import { useUser } from '@/features/auth/hooks';
 import TaskPanel from './TaskPanel';
-import { useTheme } from '../contexts/ThemeContext';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface Message {
   id: string;
@@ -477,9 +477,9 @@ export default function ChatInterface({ isOpen, onClose }: ChatInterfaceProps) {
       </div>
 
       {/* Task Panel - Hidden on mobile by default, can be toggled */}
-      {/* <div className="hidden md:flex">
+      <div className="hidden md:flex">
         <TaskPanel onTaskAction={handleTaskAction} tasks={tasks} />
-      </div> */}
+      </div>
 
       {/* Hidden file input */}
       <input

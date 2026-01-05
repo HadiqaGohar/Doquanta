@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
       headers: await headers()
     });
 
+    
     if (!session) {
       console.error("No session found in debug auth endpoint");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

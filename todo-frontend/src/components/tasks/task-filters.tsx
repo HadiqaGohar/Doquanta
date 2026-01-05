@@ -12,6 +12,7 @@ import { TaskPriority, TaskCategory } from "@/features/tasks/types";
 import { statusOptions, priorityOptions, categoryOptions, sortOptions } from "@/features/tasks/config";
 import { useTasks } from "@/features/tasks/hooks";
 
+
 export function TaskFilters() {
   const { filters, updateFilters, resetFilters } = useTasks();
 

@@ -5,6 +5,7 @@ Test the correct MCP server pattern
 from mcp.server import Server
 from mcp.types import Tool, TextContent
 from typing import List
+
 import asyncio
 
 # Create a simple server to test the pattern

@@ -9,6 +9,7 @@ interface SendEmailParams {
   react: React.ReactElement;
 }
 
+
 export const sendEmail = async ({ to, subject, react }: SendEmailParams): Promise<boolean> => {
   try {
     const emailHtml = await render(react);

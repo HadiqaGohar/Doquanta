@@ -13,6 +13,7 @@ import {
 } from "@react-email/components";
 import { CoffeeIcon } from "lucide-react";
 
+
 interface VerificationEmailProps {
   userName?: string;
   verificationLink: string;

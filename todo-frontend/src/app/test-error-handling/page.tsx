@@ -12,6 +12,7 @@ const TestErrorHandlingPage = () => {
       <p className="mb-4 text-gray-600">
         This page allows you to test the error handling in the chat interface.
       </p>
+      
 
       <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
         <h3 className="font-medium text-yellow-800">Testing Instructions:</h3>

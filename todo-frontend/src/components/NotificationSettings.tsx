@@ -7,6 +7,7 @@ interface NotificationSettings {
   taskUpdates: boolean;
   chatMessages: boolean;
   dailySummary: boolean;
+  
 }
 
 const NotificationSettings: React.FC = () => {

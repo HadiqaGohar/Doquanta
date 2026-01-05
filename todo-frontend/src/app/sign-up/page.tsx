@@ -34,6 +34,7 @@ export default function SignUpPage() {
       alert('Passwords do not match');
       return;
     }
+    
 
     signUp.mutate({
       name: formData.name,

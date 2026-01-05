@@ -10,6 +10,7 @@ export default function Home() {
 const anton = { className: "font-anton" };
 
 
+
   return (
     <main className="min-h-screen bg-white font-sans overflow-hidden relative">
       <Header />

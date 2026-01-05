@@ -3,6 +3,7 @@ export type TaskCategory = "work" | "personal" | "health" | "finance" | "learnin
 export type RecurrencePattern = "none" | "daily" | "weekly" | "monthly" | "yearly";
 
 
+
 export interface Task {
   id: string;
   title: string;

@@ -20,6 +20,7 @@ function SideNavbar({ userName = 'User', userEmail = 'Email', collapsed, setColl
 
   const handleSignOut = () => signOut.mutate()
 
+  
   const navItems = [
     { name: 'Dashboard', icon: HomeIcon, path: '/dashboard' },
     { name: 'Analytics', icon: BarChart3, path: '/dashboard/analytics' },

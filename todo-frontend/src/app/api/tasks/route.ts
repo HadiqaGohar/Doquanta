@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
       queryParams.append(key, value);
     }
 
+    
     // Forward the request to the backend with the user ID in the URL
     // The backend will validate the user ID against the session on its end
     const queryString = queryParams.toString();

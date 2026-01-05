@@ -6,6 +6,7 @@ import { useTasks } from '@/features/tasks/hooks';
 import { useState, useEffect } from 'react';
 import { format, subDays, eachDayOfInterval, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 
+
 // Mock data for analytics - would be replaced with real API calls
 const generateMockAnalyticsData = (tasks: any[]) => {
   const today = new Date();

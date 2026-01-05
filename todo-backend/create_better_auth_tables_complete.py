@@ -117,15 +117,11 @@ def create_better_auth_tables():
 
             conn.commit()
 
-            # Verify that the session table was created
+            # Verify that the session table was created (SQLite-specific query)
             result = conn.execute(text("""
-                SELECT EXISTS (
-                    SELECT FROM information_schema.tables
-                    WHERE table_schema = 'public'
-                    AND table_name = 'session'
-                );
+                SELECT name FROM sqlite_master WHERE type='table' AND name='session';
             """))
-            session_exists = result.fetchone()[0]
+            session_exists = result.fetchone() is not None
 
             if session_exists:
                 logger.info("✓ Session table successfully created!")

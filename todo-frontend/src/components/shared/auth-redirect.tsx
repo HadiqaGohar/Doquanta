@@ -12,6 +12,7 @@ interface AuthRedirectProps {
   requireAuth?: boolean; // If true, redirects to login when not authenticated; if false, redirects to dashboard when authenticated
 }
 
+
 export function AuthRedirect({
   children,
   redirectTo = "/dashboard",

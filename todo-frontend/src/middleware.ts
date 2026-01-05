@@ -9,6 +9,7 @@ export async function middleware(request: NextRequest) {
     /^\/settings(\/.*)?$/,   // Settings routes
     // /^\/tasks(\/.*)?$/,      // Task routes
   ];
+  
 
   // Check if the current path matches any protected route
   const isProtectedRoute = protectedPaths.some(pathPattern => 

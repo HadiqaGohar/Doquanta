@@ -13,6 +13,7 @@ interface ProtectedRouteProps {
   redirectTo?: string;
 }
 
+
 export function ProtectedRoute({
   children,
   redirectTo = "/sign-in"

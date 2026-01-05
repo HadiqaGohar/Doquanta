@@ -12,6 +12,7 @@ interface AnimatedThemeTogglerProps
   duration?: number
 }
 
+
 export const AnimatedThemeToggler = ({
   className,
   duration = 400,

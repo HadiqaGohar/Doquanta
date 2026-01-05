@@ -11,6 +11,7 @@ export const authClient = createAuthClient({
       console.error("Auth error:", error);
       toast.error(error.error.message || "An authentication error occurred");
     },
+    
   },
 });
 

@@ -9,6 +9,7 @@ interface NotificationDisplayProps {
   reminderTime?: string;
 }
 
+
 const NotificationDisplay: React.FC<NotificationDisplayProps> = ({
   taskId,
   taskTitle = 'Task Reminder',

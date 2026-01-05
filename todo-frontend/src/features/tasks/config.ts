@@ -9,6 +9,7 @@ export const priorityConfig = {
 
 export type PriorityConfig = typeof priorityConfig;
 
+
 // Category configuration
 export const categoryConfig = {
   work: { label: "Work", emoji: "💼" },

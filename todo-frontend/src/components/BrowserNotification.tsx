@@ -90,14 +90,12 @@ const useBrowserNotification = () => {
     }
   };
 
-  const isSupported = typeof window !== 'undefined' && 'Notification' in window;
-
   return {
     permission,
     requestPermission,
     showNotification,
     showTaskReminderNotification,
-    isSupported,
+    isSupported: typeof window !== 'undefined' && 'Notification' in window,
   };
 };
 

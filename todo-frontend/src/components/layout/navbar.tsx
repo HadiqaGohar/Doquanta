@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler"
 
+
 export function Navbar() {
   const { user } = useUser();
   const { signOut: { mutate: signOut } } = useAuth();

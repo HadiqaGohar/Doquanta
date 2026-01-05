@@ -9,6 +9,7 @@ export async function proxy(request: NextRequest) {
     const pathname = request.nextUrl.pathname;
 
     if (!session) {
+        
         // Unsigned users can access /sign-in and /sign-up
         if (pathname === "/sign-in" || pathname === "/sign-up" || pathname === "/") {
             return NextResponse.next();

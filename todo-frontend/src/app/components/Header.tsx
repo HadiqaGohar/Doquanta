@@ -83,7 +83,8 @@ export default function Header() {
                 <Link
                   href="/sign-up"
                   className="px-6 py-2.5 rounded-xl bg-black text-white text-sm font-bold hover:scale-105 transition"
-                >
+            
+            >
                   Get Started
                 </Link>
               </div>

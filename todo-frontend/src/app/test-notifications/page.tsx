@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import NotificationDisplay from '../../components/NotificationDisplay';
-import useBrowserNotification from '../../components/BrowserNotification';
+import NotificationDisplay from '@/components/NotificationDisplay';
+import useBrowserNotification from '@/components/BrowserNotification';
 
 const NotificationTestPage = () => {
   const { permission, requestPermission, showNotification, showTaskReminderNotification, isSupported } = useBrowserNotification();
@@ -64,6 +64,7 @@ const NotificationTestPage = () => {
           </button>
         </div>
       </div>
+      
 
       <div className="mb-6">
         <h2 className="text-xl font-semibold mb-2">Test Task Reminder</h2>

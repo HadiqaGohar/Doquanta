@@ -20,84 +20,37 @@ def fix_session_table():
         logger.info("Fixing session table structure...")
 
         with engine.connect() as conn:
-            # First, check what columns currently exist in the session table
-            result = conn.execute(text("""
-                SELECT column_name, data_type
-                FROM information_schema.columns
-                WHERE table_name = 'session'
-                ORDER BY ordinal_position;
-            """))
+            # First, check what columns currently exist in the session table (SQLite-specific query)
+            result = conn.execute(text("PRAGMA table_info(session);"))
 
             logger.info("Current session table columns:")
-            for row in result:
-                logger.info(f"  - {row[0]} ({row[1]})")
+            columns_info = result.fetchall()
+            current_columns = [col[1] for col in columns_info]  # Column name is at index 1
+            for col in columns_info:
+                logger.info(f"  - {col[1]} ({col[2]})")  # name (type)
 
-            # Check if user_id column exists, if not, try userId
-            result = conn.execute(text("""
-                SELECT column_name
-                FROM information_schema.columns
-                WHERE table_name = 'session' AND column_name = 'user_id';
-            """))
-            user_id_exists = bool(result.fetchone())
+            # Check if userId column exists (Better Auth format)
+            user_id_exists = 'userId' in current_columns or 'user_id' in current_columns
 
             if not user_id_exists:
-                logger.info("user_id column doesn't exist, checking for userId...")
-                result = conn.execute(text("""
-                    SELECT column_name
-                    FROM information_schema.columns
-                    WHERE table_name = 'session' AND column_name = 'userId';
-                """))
-                user_id_exists = bool(result.fetchone())
-
-                if not user_id_exists:
-                    logger.info("Adding userId column to session table...")
-                    conn.execute(text("ALTER TABLE session ADD COLUMN \"userId\" VARCHAR;"))
-                    logger.info("Added userId column.")
+                logger.info("Adding userId column to session table...")
+                conn.execute(text("ALTER TABLE session ADD COLUMN \"userId\" TEXT;"))
+                logger.info("Added userId column.")
 
             # Check if token column exists (it should be named 'token')
-            result = conn.execute(text("""
-                SELECT column_name
-                FROM information_schema.columns
-                WHERE table_name = 'session' AND column_name = 'token';
-            """))
-            token_exists = bool(result.fetchone())
+            token_exists = 'token' in current_columns or 'sessionToken' in current_columns
 
             if not token_exists:
-                logger.info("token column doesn't exist, checking for sessionToken...")
-                result = conn.execute(text("""
-                    SELECT column_name
-                    FROM information_schema.columns
-                    WHERE table_name = 'session' AND column_name = 'sessionToken';
-                """))
-                session_token_exists = bool(result.fetchone())
+                logger.info("Adding token column to session table...")
+                conn.execute(text("ALTER TABLE session ADD COLUMN \"token\" TEXT UNIQUE;"))
+                logger.info("Added token column.")
 
-                if session_token_exists:
-                    logger.info("Renaming sessionToken to token...")
-                    conn.execute(text("ALTER TABLE session RENAME COLUMN \"sessionToken\" TO \"token\";"))
-                else:
-                    logger.info("Adding token column to session table...")
-                    conn.execute(text("ALTER TABLE session ADD COLUMN \"token\" VARCHAR UNIQUE;"))
-
-            # Check if expires_at column exists
-            result = conn.execute(text("""
-                SELECT column_name
-                FROM information_schema.columns
-                WHERE table_name = 'session' AND column_name = 'expires_at';
-            """))
-            expires_at_exists = bool(result.fetchone())
+            # Check if expiresAt column exists (Better Auth format)
+            expires_at_exists = 'expiresAt' in current_columns or 'expires_at' in current_columns
 
             if not expires_at_exists:
-                logger.info("expires_at column doesn't exist, checking for expiresAt...")
-                result = conn.execute(text("""
-                    SELECT column_name
-                    FROM information_schema.columns
-                    WHERE table_name = 'session' AND column_name = 'expiresAt';
-                """))
-                expires_at_exists = bool(result.fetchone())
-
-                if not expires_at_exists:
-                    logger.info("Adding expiresAt column to session table...")
-                    conn.execute(text("ALTER TABLE session ADD COLUMN \"expiresAt\" TIMESTAMP WITH TIME ZONE;"))
+                logger.info("Adding expiresAt column to session table...")
+                conn.execute(text("ALTER TABLE session ADD COLUMN \"expiresAt\" TEXT;"))  # TEXT for datetime in SQLite
 
             # Commit the changes
             conn.commit()
@@ -105,16 +58,11 @@ def fix_session_table():
             logger.info("Session table structure fixed successfully!")
 
             # Show the updated structure
-            result = conn.execute(text("""
-                SELECT column_name, data_type
-                FROM information_schema.columns
-                WHERE table_name = 'session'
-                ORDER BY ordinal_position;
-            """))
+            result = conn.execute(text("PRAGMA table_info(session);"))
 
             logger.info("Updated session table columns:")
             for row in result:
-                logger.info(f"  - {row[0]} ({row[1]})")
+                logger.info(f"  - {row[1]} ({row[2]})")  # name (type)
 
     except Exception as e:
         logger.error(f"Error fixing session table: {e}")

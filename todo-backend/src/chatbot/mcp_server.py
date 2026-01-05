@@ -8,6 +8,7 @@ from sqlmodel import Session, select
 from src.models.models import Task
 from src.db.session import engine
 from datetime import datetime
+from src.services.date_time_parser import date_time_parser_service
 
 # Initialize logger
 logger = logging.getLogger(__name__)
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 # Initialize MCP Server
 mcp_server = Server("todo-mcp-server")
 
-@mcp_server.tools.list
+@mcp_server.list_tools()
 def list_tools() -> List[Tool]:
     """
     List available MCP tools for todo operations.
@@ -31,7 +32,13 @@ def list_tools() -> List[Tool]:
                     "title": {"type": "string", "description": "Task title"},
                     "description": {"type": "string", "description": "Task description (optional)"},
                     "priority": {"type": "string", "enum": ["low", "medium", "high"], "default": "medium"},
-                    "category": {"type": "string", "default": "other"}
+                    "category": {"type": "string", "default": "other"},
+                    "due_date": {"type": "string", "description": "Due date in ISO format or natural language (e.g., 'tomorrow', 'next Monday')"},
+                    "reminder_time": {"type": "string", "description": "Reminder time in ISO format or natural language"},
+                    "is_recurring": {"type": "boolean", "description": "Whether the task is recurring"},
+                    "recurrence_pattern": {"type": "string", "enum": ["daily", "weekly", "monthly", "yearly"], "description": "Pattern for recurring tasks"},
+                    "recurrence_interval": {"type": "integer", "description": "Interval for recurring tasks (e.g., every 2 weeks)"},
+                    "recurrence_end_date": {"type": "string", "description": "End date for recurring tasks in ISO format or natural language"}
                 },
                 "required": ["user_id", "title"]
             }
@@ -86,14 +93,20 @@ def list_tools() -> List[Tool]:
                     "description": {"type": "string", "description": "New task description (optional)"},
                     "priority": {"type": "string", "enum": ["low", "medium", "high"]},
                     "category": {"type": "string"},
-                    "completed": {"type": "boolean"}
+                    "completed": {"type": "boolean"},
+                    "due_date": {"type": "string", "description": "New due date in ISO format or natural language"},
+                    "reminder_time": {"type": "string", "description": "New reminder time in ISO format or natural language"},
+                    "is_recurring": {"type": "boolean", "description": "Whether the task is recurring"},
+                    "recurrence_pattern": {"type": "string", "enum": ["daily", "weekly", "monthly", "yearly"], "description": "Pattern for recurring tasks"},
+                    "recurrence_interval": {"type": "integer", "description": "Interval for recurring tasks"},
+                    "recurrence_end_date": {"type": "string", "description": "End date for recurring tasks in ISO format or natural language"}
                 },
                 "required": ["user_id", "task_id"]
             }
         )
     ]
 
-@mcp_server.tools.call
+@mcp_server.call_tool()
 async def call_tool(tool_name: str, arguments: Dict[str, Any]) -> List[TextContent]:
     """
     Execute MCP tool calls for todo operations.
@@ -113,6 +126,27 @@ async def call_tool(tool_name: str, arguments: Dict[str, Any]) -> List[TextConte
                 priority = arguments.get("priority", "medium")
                 category = arguments.get("category", "other")
 
+                # Handle time/date parameters
+                due_date_raw = arguments.get("due_date")
+                reminder_time_raw = arguments.get("reminder_time")
+                is_recurring = arguments.get("is_recurring", False)
+                recurrence_pattern = arguments.get("recurrence_pattern")
+                recurrence_interval = arguments.get("recurrence_interval")
+                recurrence_end_date_raw = arguments.get("recurrence_end_date")
+
+                # Parse date/time values
+                due_date = None
+                if due_date_raw:
+                    due_date = date_time_parser_service.parse_datetime(due_date_raw)
+
+                reminder_time = None
+                if reminder_time_raw:
+                    reminder_time = date_time_parser_service.parse_datetime(reminder_time_raw)
+
+                recurrence_end_date = None
+                if recurrence_end_date_raw:
+                    recurrence_end_date = date_time_parser_service.parse_datetime(recurrence_end_date_raw)
+
                 if not title:
                     result = {"error": "Missing required 'title' parameter"}
                 else:
@@ -123,6 +157,12 @@ async def call_tool(tool_name: str, arguments: Dict[str, Any]) -> List[TextConte
                         description=description,
                         priority=priority,
                         category=category,
+                        due_date=due_date,
+                        reminder_time=reminder_time,
+                        is_recurring=is_recurring,
+                        recurrence_pattern=recurrence_pattern,
+                        recurrence_interval=recurrence_interval,
+                        recurrence_end_date=recurrence_end_date,
                         created_at=datetime.now()
                     )
                     session.add(db_task)
@@ -234,6 +274,36 @@ async def call_tool(tool_name: str, arguments: Dict[str, Any]) -> List[TextConte
                             value = arguments.get(field)
                             if value is not None:
                                 setattr(db_task, field, value)
+
+                        # Handle time/date parameters
+                        due_date_raw = arguments.get("due_date")
+                        reminder_time_raw = arguments.get("reminder_time")
+                        is_recurring = arguments.get("is_recurring")
+                        recurrence_pattern = arguments.get("recurrence_pattern")
+                        recurrence_interval = arguments.get("recurrence_interval")
+                        recurrence_end_date_raw = arguments.get("recurrence_end_date")
+
+                        # Parse and update date/time values
+                        if due_date_raw is not None:
+                            due_date = date_time_parser_service.parse_datetime(due_date_raw)
+                            db_task.due_date = due_date
+
+                        if reminder_time_raw is not None:
+                            reminder_time = date_time_parser_service.parse_datetime(reminder_time_raw)
+                            db_task.reminder_time = reminder_time
+
+                        if is_recurring is not None:
+                            db_task.is_recurring = is_recurring
+
+                        if recurrence_pattern is not None:
+                            db_task.recurrence_pattern = recurrence_pattern
+
+                        if recurrence_interval is not None:
+                            db_task.recurrence_interval = recurrence_interval
+
+                        if recurrence_end_date_raw is not None:
+                            recurrence_end_date = date_time_parser_service.parse_datetime(recurrence_end_date_raw)
+                            db_task.recurrence_end_date = recurrence_end_date
 
                         db_task.updated_at = datetime.now()
                         session.add(db_task)

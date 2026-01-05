@@ -47,6 +47,7 @@ const ChatbotIcon: React.FC = () => {
       <ChatInterface isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
     </>
   );
+  
 };
 
 export default ChatbotIcon;

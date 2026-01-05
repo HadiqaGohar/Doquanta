@@ -5,6 +5,7 @@ import { Task, CreateTaskData, UpdateTaskData } from "./types";
 // Define filter parameters type
 export interface GetTasksFilters {
   keyword?: string;
+  
   completed?: boolean;
   priority?: string;
   category?: string;

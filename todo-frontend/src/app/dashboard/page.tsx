@@ -143,6 +143,7 @@ export default function DashboardPage() {
                       onClick={() =>
                         toggleTaskCompletion.mutate({
                           id: task.id,
+                  
                           completed: true,
                         })
                       }

@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+
 const commonPasswords = ['password', '123456', 'qwerty', 'admin', 'letmein'];
 
 // Sign up schema

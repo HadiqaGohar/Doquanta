@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useUser, useAuth } from "@/features/auth/hooks";
 import { toast } from "react-hot-toast";
 
+
 export default function ProfilePage() {
   const { user } = useUser();
   const { signOut } = useAuth();
