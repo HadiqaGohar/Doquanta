@@ -17,24 +17,23 @@ export async function DELETE(request: NextRequest) {
     // Extract user ID from session
     const userId = session.user.id;
 
-    // Get the token from cookies
-    const token = request.cookies.get("better-auth.session_token")?.value;
-    
-    if (!token) {
-        console.error("No session token found in cookies");
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const backendUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/${userId}/tasks/completed/clear`;
 
-    // Forward the request to the backend with Authorization header
+    // Extract Better Auth session token from cookies to use as Authorization header
+    const cookies = request.headers.get('cookie') || '';
+    const sessionCookieMatch = cookies.match(/__Secure-bta-s=([^;]+)/) || cookies.match(/bta-s=([^;]+)/);
+    const sessionToken = sessionCookieMatch ? sessionCookieMatch[1] : null;
+
+    // Forward the request to the backend with proper authentication
     const response = await fetch(backendUrl, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        // Include session token in Authorization header for backend security
+        'Authorization': sessionToken ? `Bearer ${sessionToken}` : '',
+        // Also forward cookies in case backend needs them for other purposes
+        'Cookie': cookies
       },
-      credentials: 'include', // Include cookies for authentication
     });
 
     const data = await response.json();

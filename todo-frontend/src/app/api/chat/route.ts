@@ -1,105 +1,23 @@
-import { NextRequest } from "next/server";
-import { auth } from "@/lib/auth/server";
-import { headers } from "next/headers";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
+import { getSession } from '@/lib/auth/server';
 import { ensureSessionRegistered } from "@/utils/auth";
-
-export async function GET(request: NextRequest) {
-  try {
-    // Get the session from Better Auth
-    const session = await auth.api.getSession({
-      headers: await headers()
-    });
-
-    if (!session) {
-      console.error("No session found in GET");
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Extract user ID from session
-    const userId = session.user.id;
-    console.log("GET - User ID from session:", userId);
-
-    // Ensure session is registered with backend
-    await ensureSessionRegistered();
-
-    // Get query parameters
-    const { searchParams } = new URL(request.url);
-    const queryParams = new URLSearchParams();
-
-    // Add all search params to the query string
-    for (const [key, value] of searchParams) {
-      queryParams.append(key, value);
-    }
-
-    // Forward the request to the backend with the user ID in the URL
-    // The backend will validate the user ID against the session on its end
-    const queryString = queryParams.toString();
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/${userId}/tasks/${queryString ? `?${queryString}` : ''}`;
-    console.log("GET - Backend URL:", backendUrl);
-
-    // Extract Better Auth session token from cookies to use as Authorization header
-    const cookies = request.headers.get('cookie') || '';
-    
-    // Support all Better Auth cookie variations
-    let sessionToken = null;
-    const betterAuthTokenMatch = cookies.match(/better-auth\.session_token=([^;]+)/);
-    const secureBetterAuthTokenMatch = cookies.match(/__Secure-better-auth\.session_token=([^;]+)/);
-    const shortTokenMatch = cookies.match(/bta-s=([^;]+)/);
-    const secureShortTokenMatch = cookies.match(/__Secure-bta-s=([^;]+)/);
-    
-    if (secureBetterAuthTokenMatch) sessionToken = secureBetterAuthTokenMatch[1];
-    else if (betterAuthTokenMatch) sessionToken = betterAuthTokenMatch[1];
-    else if (secureShortTokenMatch) sessionToken = secureShortTokenMatch[1];
-    else if (shortTokenMatch) sessionToken = shortTokenMatch[1];
-    
-    // Forward the request to the backend with proper authentication
-    const response = await fetch(backendUrl, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        // Include session token in Authorization header for backend security
-        'Authorization': sessionToken ? `Bearer ${sessionToken}` : '',
-        // Also forward cookies in case backend needs them for other purposes
-        'Cookie': cookies
-      },
-    });
-
-    console.log("GET - Backend response status:", response.status);
-
-    const data = await response.json();
-    return NextResponse.json(data, { status: response.status });
-  } catch (error) {
-    console.error("Error in tasks GET API:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-  }
-}
-
 
 export async function POST(request: NextRequest) {
   try {
-    // Get the session from Better Auth
-    const session = await auth.api.getSession({
-      headers: await headers()
-    });
-
+    // Get the user session to ensure they're authenticated
+    const session = await getSession(request);
     if (!session) {
-      console.error("No session found");
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    // Extract user ID from session
-    const userId = session.user.id;
-    console.log("User ID from session:", userId);
 
     // Ensure session is registered with backend
     await ensureSessionRegistered();
 
+    // Get the request body
     const body = await request.json();
-    console.log("Request body:", body);
 
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/${userId}/tasks/`;
-    console.log("Backend URL:", backendUrl);
+    // Call the backend API with session cookies for authentication
+    const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
 
     // Extract Better Auth session token from cookies to use as Authorization header
     const cookies = request.headers.get('cookie') || '';
@@ -116,25 +34,78 @@ export async function POST(request: NextRequest) {
     else if (secureShortTokenMatch) sessionToken = secureShortTokenMatch[1];
     else if (shortTokenMatch) sessionToken = shortTokenMatch[1];
 
-    // Forward the request to the backend with proper authentication
-    const response = await fetch(backendUrl, {
+    const response = await fetch(`${backendUrl}/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         // Include session token in Authorization header for backend security
         'Authorization': sessionToken ? `Bearer ${sessionToken}` : '',
-        // Also forward cookies in case backend needs them for other purposes
+        // Forward the Better Auth session cookies to the backend for authentication
         'Cookie': cookies
       },
       body: JSON.stringify(body),
     });
 
-    console.log("Backend response status:", response.status);
+    const data = await response.json();
+    return NextResponse.json(data, { status: response.status });
+  } catch (error) {
+    console.error('Chat API error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    // Get the user session to ensure they're authenticated
+    const session = await getSession(request);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Ensure session is registered with backend
+    await ensureSessionRegistered();
+
+    // Extract session_id from URL
+    const { searchParams } = new URL(request.url);
+    const sessionId = searchParams.get('session_id');
+
+    if (!sessionId) {
+      return NextResponse.json({ error: 'Session ID is required' }, { status: 400 });
+    }
+
+    // Call the backend API with session cookies for authentication
+    const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+
+    // Extract Better Auth session token from cookies to use as Authorization header
+    const cookies = request.headers.get('cookie') || '';
+    
+    // Support all Better Auth cookie variations
+    let sessionToken = null;
+    const betterAuthTokenMatch = cookies.match(/better-auth\.session_token=([^;]+)/);
+    const secureBetterAuthTokenMatch = cookies.match(/__Secure-better-auth\.session_token=([^;]+)/);
+    const shortTokenMatch = cookies.match(/bta-s=([^;]+)/);
+    const secureShortTokenMatch = cookies.match(/__Secure-bta-s=([^;]+)/);
+    
+    if (secureBetterAuthTokenMatch) sessionToken = secureBetterAuthTokenMatch[1];
+    else if (betterAuthTokenMatch) sessionToken = betterAuthTokenMatch[1];
+    else if (secureShortTokenMatch) sessionToken = secureShortTokenMatch[1];
+    else if (shortTokenMatch) sessionToken = shortTokenMatch[1];
+
+    const response = await fetch(`${backendUrl}/chat/history/${sessionId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        // Include session token in Authorization header for backend security
+        'Authorization': sessionToken ? `Bearer ${sessionToken}` : '',
+        // Forward the Better Auth session cookies to the backend for authentication
+        'Cookie': cookies
+      },
+    });
 
     const data = await response.json();
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    console.error("Error in tasks POST API:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    console.error('Chat history API error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

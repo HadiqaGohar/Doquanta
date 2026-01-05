@@ -80,3 +80,9 @@ export const auth = betterAuth({
   }
 });
 
+export const getSession = async (request: Request) => {
+  return await auth.api.getSession({
+    headers: request.headers,
+  });
+};
+

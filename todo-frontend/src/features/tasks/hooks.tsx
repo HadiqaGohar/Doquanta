@@ -132,7 +132,7 @@ export const useTasks = (initialBackendFilters?: GetTasksFilters) => {
   });
 
   // Apply local filtering and sorting to tasks
-  const allTasks = fetchTasks.data?.tasks || [];
+  const allTasks = fetchTasks.data || [];
 
   // Since the backend handles filtering via combinedFilters, we don't need additional local filtering
   // The allTasks from the backend should already be filtered according to our parameters

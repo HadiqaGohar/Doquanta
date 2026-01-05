@@ -56,11 +56,10 @@ export default function DashboardLayout({
                 collapsed={sidebarCollapsed}
                 setCollapsed={setSidebarCollapsed} // pass state setter
             />
-            
+
             {/* Main content */}
             <main
-                className={`flex-1 transition-all duration-300 p-4`}
-                style={{ marginLeft: sidebarCollapsed ? '5rem' : '16rem' }}
+                className={`flex-1 transition-all duration-300 p-4 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'} pt-16 lg:pt-4`}
             >
                 {children}
             </main>

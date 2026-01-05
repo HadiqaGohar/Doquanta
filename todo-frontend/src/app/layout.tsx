@@ -4,6 +4,7 @@ import "./globals.css";
 import Footer from "./components/Footer";
 import { ReactQueryClientProvider } from "@/components/providers";
 import { Toaster } from "react-hot-toast";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 
 
 
@@ -19,14 +20,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <body>
-        <ReactQueryClientProvider>
-          {/* <Header/> */}
-          {children}
-          <Footer/>
-          <Toaster position="bottom-right" />
-        </ReactQueryClientProvider>
+        <ThemeProvider>
+          <ReactQueryClientProvider>
+            {/* <Header/> */}
+            {children}
+            <Footer/>
+            <Toaster position="bottom-right" />
+          </ReactQueryClientProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

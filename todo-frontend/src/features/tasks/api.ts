@@ -1,8 +1,8 @@
 import axios from 'axios';
 import { env } from '@/utils/env';
 
-// Use the frontend proxy routes instead of calling backend directly
-const API_BASE_URL = ''; // Empty string since we're using Next.js app router proxy routes
+// Use the deployed backend URL from environment variables
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -20,7 +20,7 @@ api.interceptors.request.use(
   }
 );
 
-// Function to create API instance that uses the proxy routes
+// Function to create API instance that uses the deployed backend
 export const createApiWithUserId = (userId: string) => {
   const apiWithUserId = axios.create({
     baseURL: API_BASE_URL,

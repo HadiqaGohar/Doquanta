@@ -11,6 +11,7 @@ export default function AddTodo() {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('other');
   const [priority, setPriority] = useState('medium');
+  const [dueDate, setDueDate] = useState<string>('');
   const { user } = useUser();
   const { addTask } = useTasks();
 
@@ -22,11 +23,13 @@ export default function AddTodo() {
         description: '',
         category: category as TaskCategory,
         priority: priority as TaskPriority,
+        due_date: dueDate ? new Date(dueDate) : null, // Convert string to Date or null
       }, {
         onSuccess: () => {
           setTitle('');
           setCategory('other');
           setPriority('medium');
+          setDueDate('');
         }
       });
     }
@@ -51,12 +54,12 @@ export default function AddTodo() {
           {addTask.isPending ? 'Adding...' : 'Add'}
         </button>
       </div>
-      
+
       <div className="flex gap-4">
         <div className="flex flex-col flex-1">
           <label className="text-xs font-semibold text-gray-500 mb-1 ml-1">Category</label>
-          <select 
-            value={category} 
+          <select
+            value={category}
             onChange={(e) => setCategory(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white text-gray-900"
           >
@@ -70,8 +73,8 @@ export default function AddTodo() {
 
         <div className="flex flex-col flex-1">
           <label className="text-xs font-semibold text-gray-500 mb-1 ml-1">Priority</label>
-          <select 
-            value={priority} 
+          <select
+            value={priority}
             onChange={(e) => setPriority(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white text-gray-900"
           >
@@ -81,6 +84,16 @@ export default function AddTodo() {
               </option>
             ))}
           </select>
+        </div>
+
+        <div className="flex flex-col flex-1">
+          <label className="text-xs font-semibold text-gray-500 mb-1 ml-1">Due Date</label>
+          <input
+            type="date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white text-gray-900"
+          />
         </div>
       </div>
     </form>

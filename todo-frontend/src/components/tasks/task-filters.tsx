@@ -60,7 +60,7 @@ export function TaskFilters() {
           value={filters.status}
           onValueChange={(value) => updateFilters({ status: value as typeof filters.status })}
         >
-          <SelectTrigger className="w-auto h-8 text-xs gap-1">
+          <SelectTrigger className="h-20 sm:h-8 text-xs gap-1 max-w-[100px] sm:max-w-[150px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -77,7 +77,7 @@ export function TaskFilters() {
           value={filters.priority}
           onValueChange={(value) => updateFilters({ priority: value as TaskPriority | "all" })}
         >
-          <SelectTrigger className="w-auto h-8 text-xs gap-1">
+          <SelectTrigger className="h-20 sm:h-8 text-xs gap-1 max-w-[100px] sm:max-w-[150px]">
             <SelectValue>Priority</SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -94,7 +94,7 @@ export function TaskFilters() {
           value={filters.category}
           onValueChange={(value) => updateFilters({ category: value as TaskCategory | "all" })}
         >
-          <SelectTrigger className="w-auto h-8 text-xs gap-1">
+          <SelectTrigger className="h-20 sm:h-8 text-xs gap-1 max-w-[100px] sm:max-w-[150px]">
             <SelectValue>Category</SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -111,7 +111,7 @@ export function TaskFilters() {
           value={filters.sortBy}
           onValueChange={(value) => updateFilters({ sortBy: value as typeof filters.sortBy })}
         >
-          <SelectTrigger className="w-auto h-8 text-xs gap-1">
+          <SelectTrigger className="h-20 sm:h-8 text-xs gap-1 max-w-[100px] sm:max-w-[150px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -127,10 +127,20 @@ export function TaskFilters() {
         <Button
           variant="outline"
           size="sm"
-          className="h-8 text-xs"
+          className="h-8 text-xs hidden sm:block"
           onClick={() => updateFilters({ sortOrder: filters.sortOrder === "asc" ? "desc" : "asc" })}
         >
           {filters.sortOrder === "asc" ? "↑ Asc" : "↓ Desc"}
+        </Button>
+
+        {/* Sort Order Toggle - Mobile */}
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-20 sm:h-8 text-xs sm:hidden"
+          onClick={() => updateFilters({ sortOrder: filters.sortOrder === "asc" ? "desc" : "asc" })}
+        >
+          {filters.sortOrder === "asc" ? "↑" : "↓"}
         </Button>
 
         {/* Clear Filters */}

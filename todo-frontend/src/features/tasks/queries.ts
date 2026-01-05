@@ -15,7 +15,7 @@ export interface GetTasksFilters {
 }
 
 // Fetch all tasks for the specified user with optional filters
-export const getTasks = async (userId: string, filters?: GetTasksFilters): Promise<{tasks: Task[], count: number}> => {
+export const getTasks = async (userId: string, filters?: GetTasksFilters): Promise<Task[]> => {
   const params = new URLSearchParams();
 
   if (filters) {
@@ -67,12 +67,19 @@ export const getTask = async (userId: string, id: string): Promise<Task> => {
 
 // Create a new task for the specified user
 export const createTask = async (userId: string, taskData: CreateTaskData): Promise<Task> => {
+  // Convert Date objects to ISO strings for API
+  const processedTaskData = {
+    ...taskData,
+    due_date: taskData.due_date ? new Date(taskData.due_date).toISOString() : null,
+    reminder_time: taskData.reminder_time ? new Date(taskData.reminder_time).toISOString() : null,
+  };
+
   const response = await fetch('/api/tasks', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(taskData),
+    body: JSON.stringify(processedTaskData),
     credentials: 'include', // Include cookies for authentication
   });
 
@@ -85,12 +92,19 @@ export const createTask = async (userId: string, taskData: CreateTaskData): Prom
 
 // Update an existing task for the specified user
 export const updateTask = async (userId: string, id: string, taskData: Partial<UpdateTaskData>): Promise<Task> => {
+  // Convert Date objects to ISO strings for API
+  const processedTaskData = {
+    ...taskData,
+    due_date: taskData.due_date ? new Date(taskData.due_date).toISOString() : undefined,
+    reminder_time: taskData.reminder_time ? new Date(taskData.reminder_time).toISOString() : undefined,
+  };
+
   const response = await fetch(`/api/tasks/${id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(taskData),
+    body: JSON.stringify(processedTaskData),
     credentials: 'include', // Include cookies for authentication
   });
 
@@ -135,7 +149,7 @@ export const deleteCompletedTasks = async (userId: string): Promise<{message: st
 
 // Toggle task completion status for the specified user
 export const toggleTaskCompletion = async (userId: string, id: string, completed: boolean): Promise<Task> => {
-  const response = await fetch(`/api/tasks/${id}`, {
+  const response = await fetch(`/api/tasks/${id}/complete`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',

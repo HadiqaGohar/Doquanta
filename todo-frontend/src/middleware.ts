@@ -4,9 +4,10 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function middleware(request: NextRequest) {
   // Define protected routes
   const protectedPaths = [
-    /^\/dashboard(\/.*)?$/,  // All dashboard routes
+    // /^\/dashboard(\/.*)?$/,  // All dashboard routes
     /^\/profile(\/.*)?$/,    // Profile routes
     /^\/settings(\/.*)?$/,   // Settings routes
+    // /^\/tasks(\/.*)?$/,      // Task routes
   ];
 
   // Check if the current path matches any protected route
