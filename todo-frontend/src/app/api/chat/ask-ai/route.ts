@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     else if (secureShortTokenMatch) sessionToken = secureShortTokenMatch[1];
     else if (shortTokenMatch) sessionToken = shortTokenMatch[1];
 
-    const response = await fetch(`${cleanBackendUrl}/chat/ask-ai`, {
+    const response = await fetch(`${cleanBackendUrl}/api/chat/ask-ai`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
