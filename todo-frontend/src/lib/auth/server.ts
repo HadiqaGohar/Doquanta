@@ -33,7 +33,7 @@ function getPool() {
 
 // Initialize auth with auto-migration enabled
 export const auth = betterAuth({
-  baseURL: env.NEXT_PUBLIC_BASE_URL,
+  baseURL: env.BETTER_AUTH_URL || env.NEXT_PUBLIC_BASE_URL,
   secret: env.BETTER_AUTH_SECRET,
   database: getPool(),
   emailVerification: {

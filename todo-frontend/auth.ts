@@ -33,7 +33,7 @@ function getPool() {
 export const auth = betterAuth({
   database: getPool(),
   secret: env.BETTER_AUTH_SECRET,
-  baseURL: env.NEXT_PUBLIC_BASE_URL,
+  baseURL: env.BETTER_AUTH_URL || env.NEXT_PUBLIC_BASE_URL,
   emailAndPassword: {
     enabled: true,
   },

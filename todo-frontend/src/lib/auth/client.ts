@@ -5,7 +5,7 @@ import { createAuthClient } from "better-auth/react";
 import { toast } from "react-hot-toast";
 
 export const authClient = createAuthClient({
-  baseURL: env.NEXT_PUBLIC_BASE_URL,
+  baseURL: typeof window !== "undefined" ? window.location.origin : env.NEXT_PUBLIC_BASE_URL,
   fetchOptions: {
     onError: (error) => {
       console.error("Auth error:", error);
