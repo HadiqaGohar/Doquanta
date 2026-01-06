@@ -63,40 +63,46 @@ export async function ensureSessionRegistered() {
 
     if (!sessionToken) {
       console.error("No session token found for registration. Cookies available:", cookies.substring(0, 50) + "..."); 
-      return false;
+      // Don't return false, let it try without token if needed, or handle gracefully
+      // return false; 
     }
 
-    console.log("Ensuring session registration - Session token found:", sessionToken.substring(0, 10) + "...");
+    console.log("Ensuring session registration - Session token found:", sessionToken ? sessionToken.substring(0, 10) + "..." : "NONE");
 
     // Forward the request to the backend to register the session
     const backendUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/register-session`;
     console.log("Ensuring session registration - Backend URL:", backendUrl);
 
     // Send the session data to the backend
-    const response = await fetch(backendUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        user_id: userId,
-        token: sessionToken,
-        expires_at: session.session.
-        expiresAt
-      }),
-    });
+    try {
+      const response = await fetch(backendUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          token: sessionToken || "anonymous",
+          expires_at: session.session.expiresAt
+        }),
+        // Add a timeout to prevent hanging
+        signal: AbortSignal.timeout(5000) 
+      });
 
-    console.log("Ensuring session registration - Backend response status:", response.status);
+      console.log("Ensuring session registration - Backend response status:", response.status);
 
-    const data = await response.json();
-    
-    if (!response.ok) {
-      console.error("Error registering session with backend:", data);
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        console.error("Error registering session with backend:", data);
+        return false;
+      }
+
+      console.log("Successfully ensured session registration with backend");
+      return true;
+    } catch (fetchError) {
+      console.error("Fetch error during session registration:", fetchError);
       return false;
     }
-
-    console.log("Successfully ensured session registration with backend");
-    return true;
   } catch (error) {
     console.error("Error in ensureSessionRegistered:", error);
     return false;
