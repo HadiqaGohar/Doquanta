@@ -13,4 +13,5 @@ GITHUB_CLIENT_ID=Ov23litR2fTzoLVtFHkg
 GITHUB_CLIENT_SECRET=a629de31abcc092ddd1e330c1b0b180cfb1ea828
 GEMINI_API_KEY=AIzaSyDGp6bSvFA0U9MuyFtXDYtBmh8AmG-rygM
 
+
 postgresql://neondb_owner:npg_NVYLqfh90crD@ep-dark-fire-ahmpx1jc-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require
