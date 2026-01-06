@@ -20,7 +20,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // Extract user ID from session
     const userId = session.user.id;
 
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/${userId}/tasks/${taskId}`;
+    const cleanApiBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/$/, "");
+    const backendUrl = `${cleanApiBaseUrl}/api/${userId}/tasks/${taskId}`;
 
     // Extract Better Auth session token from cookies to use as Authorization header
     const cookies = request.headers.get('cookie') || '';
@@ -63,7 +64,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const userId = session.user.id;
     const body = await request.json();
 
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/${userId}/tasks/${taskId}`;
+    const cleanApiBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/$/, "");
+    const backendUrl = `${cleanApiBaseUrl}/api/${userId}/tasks/${taskId}`;
 
     // Extract Better Auth session token from cookies to use as Authorization header
     const cookies = request.headers.get('cookie') || '';
@@ -106,7 +108,8 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     // Extract user ID from session
     const userId = session.user.id;
 
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/${userId}/tasks/${taskId}`;
+    const cleanApiBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/$/, "");
+    const backendUrl = `${cleanApiBaseUrl}/api/${userId}/tasks/${taskId}`;
 
     // Extract Better Auth session token from cookies to use as Authorization header
     const cookies = request.headers.get('cookie') || '';
@@ -149,7 +152,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const userId = session.user.id;
     const body = await request.json();
 
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/${userId}/tasks/${taskId}/complete`;
+    const cleanApiBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/$/, "");
+    const backendUrl = `${cleanApiBaseUrl}/api/${userId}/tasks/${taskId}/complete`;
 
     // Extract Better Auth session token from cookies to use as Authorization header
     const cookies = request.headers.get('cookie') || '';

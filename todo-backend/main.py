@@ -750,7 +750,7 @@ class RegisterSessionRequest(BaseModel):
     expires_in: Optional[int] = 7
 
 # Add a session registration endpoint for Better Auth integration
-@app.post("/api/register-session")
+@app.post("/register-session")
 async def register_session(request: RegisterSessionRequest):
     """Register a session token from Better Auth with the backend."""
     try:

@@ -18,7 +18,8 @@ export async function DELETE(request: NextRequest) {
     // Extract user ID from session
     const userId = session.user.id;
 
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/${userId}/tasks/completed/clear`;
+    const cleanApiBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/$/, "");
+    const backendUrl = `${cleanApiBaseUrl}/api/${userId}/tasks/completed/clear`;
 
     // Extract Better Auth session token from cookies to use as Authorization header
     const cookies = request.headers.get('cookie') || '';

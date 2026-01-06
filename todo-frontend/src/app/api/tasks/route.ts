@@ -36,7 +36,8 @@ export async function GET(request: NextRequest) {
     // Forward the request to the backend with the user ID in the URL
     // The backend will validate the user ID against the session on its end
     const queryString = queryParams.toString();
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/${userId}/tasks/${queryString ? `?${queryString}` : ''}`;
+    const cleanApiBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/$/, "");
+    const backendUrl = `${cleanApiBaseUrl}/api/${userId}/tasks/${queryString ? `?${queryString}` : ''}`;
     console.log("GET - Backend URL:", backendUrl);
 
     // Extract Better Auth session token from cookies to use as Authorization header
@@ -99,7 +100,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log("Request body:", body);
 
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/${userId}/tasks/`;
+    const cleanApiBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/$/, "");
+    const backendUrl = `${cleanApiBaseUrl}/api/${userId}/tasks/`;
     console.log("Backend URL:", backendUrl);
 
     // Extract Better Auth session token from cookies to use as Authorization header

@@ -70,7 +70,7 @@ export async function ensureSessionRegistered() {
     console.log("Ensuring session registration - Session token found:", sessionToken ? sessionToken.substring(0, 10) + "..." : "NONE");
 
     // Forward the request to the backend to register the session
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/register-session`;
+    const backendUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/register-session`;
     console.log("Ensuring session registration - Backend URL:", backendUrl);
 
     // Send the session data to the backend

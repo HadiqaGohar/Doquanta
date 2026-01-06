@@ -17,8 +17,9 @@ export async function POST(request: NextRequest) {
     // Get the request body
     const body = await request.json();
 
-    // Call the backend API with session cookies for authentication
     const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+    // Remove trailing slash if present
+    const cleanBackendUrl = backendUrl.replace(/\/$/, "");
 
     // Extract Better Auth session token from cookies to use as Authorization header
     const cookies = request.headers.get('cookie') || '';
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
     else if (secureShortTokenMatch) sessionToken = secureShortTokenMatch[1];
     else if (shortTokenMatch) sessionToken = shortTokenMatch[1];
 
-    const response = await fetch(`${backendUrl}/chat/ask-ai`, {
+    const response = await fetch(`${cleanBackendUrl}/chat/ask-ai`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
