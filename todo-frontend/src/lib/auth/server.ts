@@ -36,6 +36,17 @@ export const auth = betterAuth({
   baseURL: env.BETTER_AUTH_URL || env.NEXT_PUBLIC_BASE_URL,
   secret: env.BETTER_AUTH_SECRET,
   database: getPool(),
+  advanced: {
+    defaultCookieAttributes: {
+      httpOnly: true,
+      secure: env.NODE_ENV === "production"
+    },
+  },
+  trustedOrigins: [
+    env.NEXT_PUBLIC_BASE_URL,
+    "https://doquanta.vercel.app",
+    "https://*.vercel.app"
+  ],
   emailVerification: {
     async sendVerificationEmail({ user, url }) {
       const emailSent = await sendVerificationEmail(user.email, url, user.name);
@@ -72,13 +83,7 @@ export const auth = betterAuth({
   plugins: [
     nextCookies(),
     jwt(),
-  ],
-  advanced: {
-    defaultCookieAttributes: {
-      httpOnly: true,
-      secure: env.NODE_ENV === "production"
-    },
-  }
+  ]
 });
 
 export const getSession = async (request: Request) => {
@@ -86,4 +91,3 @@ export const getSession = async (request: Request) => {
     headers: request.headers,
   });
 };
-

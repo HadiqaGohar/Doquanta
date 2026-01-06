@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 
 // Protect routes that require authentication
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Skip middleware for API routes to prevent trailing slash issues
+  if (pathname.startsWith('/api')) {
+    return NextResponse.next();
+  }
+
   // Define protected routes
   const protectedPaths = [
     // /^\/dashboard(\/.*)?$/,  // All dashboard routes
@@ -13,7 +20,7 @@ export async function middleware(request: NextRequest) {
 
   // Check if the current path matches any protected route
   const isProtectedRoute = protectedPaths.some(pathPattern => 
-    pathPattern.test(request.nextUrl.pathname)
+    pathPattern.test(pathname)
   );
 
   if (isProtectedRoute) {
@@ -26,7 +33,7 @@ export async function middleware(request: NextRequest) {
         // Redirect to login if no token exists
         const url = request.nextUrl.clone();
         url.pathname = '/sign-in';
-        url.search = `callbackUrl=${request.nextUrl.pathname}`;
+        url.search = `callbackUrl=${pathname}`;
         return NextResponse.redirect(url);
       }
 
@@ -37,7 +44,7 @@ export async function middleware(request: NextRequest) {
       // If there's an error verifying the token, redirect to login
       const url = request.nextUrl.clone();
       url.pathname = '/sign-in';
-      url.search = `callbackUrl=${request.nextUrl.pathname}`;
+      url.search = `callbackUrl=${pathname}`;
       return NextResponse.redirect(url);
     }
   }
