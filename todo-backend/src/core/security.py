@@ -46,15 +46,31 @@ def verify_session_token(token: str) -> Optional[str]:
             print(f"DEBUG: Token has signature, using raw token for DB lookup: {repr(db_token)}")
 
         with Session(engine) as session:
-            # Query the session table - Check for both possible column names
-            # First try with the actual column names in our SQLite database
-            statement = text("SELECT user_id, expires_at FROM session WHERE token = :token")
-            result = session.execute(statement, params={"token": db_token}).first()
-
-            # If not found with snake_case, try with camelCase
-            if not result:
-                statement = text("SELECT userId, expiresAt FROM session WHERE token = :token")
+            # Query the session table - Support both PostgreSQL (quoted camelCase) and SQLite (snake_case)
+            # Try with the actual column names in our database (Neon/Postgres use "userId" and "expiresAt")
+            
+            # 1. Try quoted camelCase (PostgreSQL standard for case-sensitive columns)
+            try:
+                statement = text('SELECT "userId", "expiresAt" FROM "session" WHERE "token" = :token')
                 result = session.execute(statement, params={"token": db_token}).first()
+            except Exception:
+                result = None
+
+            # 2. Try snake_case (standard for some SQLAlchemy setups or SQLite)
+            if not result:
+                try:
+                    statement = text("SELECT user_id, expires_at FROM session WHERE token = :token")
+                    result = session.execute(statement, params={"token": db_token}).first()
+                except Exception:
+                    result = None
+
+            # 3. Try unquoted camelCase (SQLite is case-insensitive)
+            if not result:
+                try:
+                    statement = text("SELECT userId, expiresAt FROM session WHERE token = :token")
+                    result = session.execute(statement, params={"token": db_token}).first()
+                except Exception:
+                    result = None
 
             if result:
                 user_id, expires_at = result
@@ -68,12 +84,16 @@ def verify_session_token(token: str) -> Optional[str]:
                 if isinstance(expires_at, str):
                     # Convert string to datetime object
                     from datetime import datetime as dt
-                    expires_at = dt.fromisoformat(expires_at.replace('Z', '+00:00'))
+                    # Support multiple formats including those with ' ' or 'T'
+                    try:
+                        expires_at = dt.fromisoformat(expires_at.replace('Z', '+00:00'))
+                    except ValueError:
+                        # Fallback for other formats
+                        expires_at = dt.strptime(expires_at.split('.')[0], "%Y-%m-%d %H:%M:%S")
 
                 if expires_at.tzinfo is None:
                     # If DB returns naive datetime, assume it's UTC or handle accordingly
-                    # Usually Postgres returns timezone aware if column is timestamptz
-                    print(f"DEBUG: DB datetime is naive, treating as UTC. Converting now to naive for comparison: {now.replace(tzinfo=None)} vs {expires_at}")
+                    print(f"DEBUG: DB datetime is naive, treating as UTC. Converting now to naive for comparison")
                     now = now.replace(tzinfo=None)
 
                 if expires_at < now:
@@ -84,7 +104,6 @@ def verify_session_token(token: str) -> Optional[str]:
                 return str(user_id)
             else:
                 print(f"DEBUG: Session token not found in DB. Token sent: {repr(token)}, DB token tried: {repr(db_token)}")
-                print(f"DEBUG: Available tokens in DB: {[row[0] for row in session.execute(text('SELECT token FROM session')).all()]}")
                 return None
 
     except Exception as e:

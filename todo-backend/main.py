@@ -773,17 +773,33 @@ async def register_session(request: RegisterSessionRequest):
             print(f"DEBUG: Registering signed token, stripping signature. Storing: {token_to_store}")
 
         with DBSession(engine) as session:
-            # Create the session record using the actual column names in the database
-            session_sql = """
-            INSERT OR REPLACE INTO session ("id", "user_id", "token", "expires_at", "created_at", "updated_at")
-            VALUES (:id, :user_id, :token, :expires_at, :created_at, :updated_at);
-            """
+            # Determine if we're using PostgreSQL or SQLite
+            is_postgres = "postgresql" in str(engine.url)
+            
+            if is_postgres:
+                # PostgreSQL syntax with quoted camelCase columns
+                session_sql = """
+                INSERT INTO "session" ("id", "userId", "token", "expiresAt", "createdAt", "updatedAt")
+                VALUES (:id, :user_id, :token, :expires_at, :created_at, :updated_at)
+                ON CONFLICT ("token") DO UPDATE SET
+                    "userId" = EXCLUDED."userId",
+                    "expiresAt" = EXCLUDED."expiresAt",
+                    "updatedAt" = EXCLUDED."updatedAt";
+                """
+            else:
+                # SQLite syntax
+                session_sql = """
+                INSERT OR REPLACE INTO session ("id", "user_id", "token", "expires_at", "created_at", "updated_at")
+                VALUES (:id, :user_id, :token, :expires_at, :created_at, :updated_at);
+                """
 
             # Check if session already exists to keep the same ID, otherwise generate new
-            existing_session = session.execute(
-                text("SELECT id FROM session WHERE token = :token"), 
-                {"token": token_to_store}
-            ).first()
+            existing_session = None
+            try:
+                query = 'SELECT id FROM "session" WHERE token = :token' if is_postgres else 'SELECT id FROM session WHERE token = :token'
+                existing_session = session.execute(text(query), {"token": token_to_store}).first()
+            except Exception:
+                pass
             
             session_id = existing_session[0] if existing_session else secrets.token_urlsafe(16)
 
