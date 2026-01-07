@@ -129,6 +129,25 @@ def delete_completed_tasks(
     session.commit()
     return {"message": f"Successfully deleted {count} completed tasks", "count": count}
 
+@router.delete("/all/clear")
+def delete_all_tasks(
+    *,
+    user_id: str,
+    session: Session = Depends(get_session),
+    current_user_id: str = Depends(verify_user_match)
+):
+    """Delete ALL tasks for the authenticated user (Danger Zone)."""
+    statement = select(Task).where(Task.user_id == current_user_id)
+    all_tasks = session.exec(statement).all()
+    
+    count = 0
+    for task in all_tasks:
+        session.delete(task)
+        count += 1
+    
+    session.commit()
+    return {"message": f"Successfully deleted {count} tasks", "count": count}
+
 @router.patch("/{task_id}/complete", response_model=Task)
 def toggle_task_complete(
     *,

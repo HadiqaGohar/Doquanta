@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useUser } from '../auth/hooks';
 import { CreateTaskData, UpdateTaskData, Task } from './types';
 import {
@@ -12,6 +12,7 @@ import {
   updateTask as updateTaskAPI,
   deleteTask as deleteTaskAPI,
   deleteCompletedTasks as deleteCompletedTasksAPI,
+  deleteAllTasks as deleteAllTasksAPI,
   toggleTaskCompletion as toggleTaskCompletionAPI,
   GetTasksFilters
 } from './queries';
@@ -101,7 +102,7 @@ export const useTasks = (initialBackendFilters?: GetTasksFilters) => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['task', variables] });
+      queryClient.invalidateQueries({ queryKey: ['task', variables.id] });
     },
   });
 
@@ -112,6 +113,19 @@ export const useTasks = (initialBackendFilters?: GetTasksFilters) => {
         throw new Error("User not authenticated");
       }
       return await deleteCompletedTasksAPI(user.id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
+  });
+
+  // Delete ALL tasks
+  const deleteAllTasksMutation = useMutation({
+    mutationFn: async () => {
+      if (!user?.id) {
+        throw new Error("User not authenticated");
+      }
+      return await deleteAllTasksAPI(user.id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
@@ -135,48 +149,50 @@ export const useTasks = (initialBackendFilters?: GetTasksFilters) => {
   // Apply local filtering and sorting to tasks
   const allTasks = fetchTasks.data || [];
 
-  // Since the backend handles filtering via combinedFilters, we don't need additional local filtering
-  // The allTasks from the backend should already be filtered according to our parameters
-  const filteredTasks = allTasks;
+  // Sort tasks based on filter options - Memoized to prevent infinite loops in consumers
+  const sortedTasks = useMemo(() => {
+    // Since the backend handles filtering via combinedFilters, we don't need additional local filtering
+    // The allTasks from the backend should already be filtered according to our parameters
+    const filteredTasks = allTasks;
 
-  // Sort tasks based on filter options
-  const sortedTasks = [...filteredTasks].sort((a, b) => {
-    let aValue, bValue;
+    return [...filteredTasks].sort((a, b) => {
+      let aValue, bValue;
 
-    switch (filterOptions.sortBy) {
-      case 'title':
-        aValue = a.title.toLowerCase();
-        bValue = b.title.toLowerCase();
-        break;
-      case 'created_at':
-        aValue = new Date(a.created_at).getTime();
-        bValue = new Date(b.created_at).getTime();
-        break;
-      case 'updated_at':
-        aValue = new Date(a.updated_at).getTime();
-        bValue = new Date(b.updated_at).getTime();
-        break;
-      case 'due_date':
-        aValue = a.due_date ? new Date(a.due_date).getTime() : Infinity;
-        bValue = b.due_date ? new Date(b.due_date).getTime() : Infinity;
-        break;
-      case 'priority':
-        // Define priority order: high > medium > low
-        const priorityOrder: Record<string, number> = { high: 3, medium: 2, low: 1 };
-        aValue = priorityOrder[a.priority] || 0;
-        bValue = priorityOrder[b.priority] || 0;
-        break;
-      default:
-        aValue = a.title.toLowerCase();
-        bValue = b.title.toLowerCase();
-    }
+      switch (filterOptions.sortBy) {
+        case 'title':
+          aValue = a.title.toLowerCase();
+          bValue = b.title.toLowerCase();
+          break;
+        case 'created_at':
+          aValue = new Date(a.created_at).getTime();
+          bValue = new Date(b.created_at).getTime();
+          break;
+        case 'updated_at':
+          aValue = new Date(a.updated_at).getTime();
+          bValue = new Date(b.updated_at).getTime();
+          break;
+        case 'due_date':
+          aValue = a.due_date ? new Date(a.due_date).getTime() : Infinity;
+          bValue = b.due_date ? new Date(b.due_date).getTime() : Infinity;
+          break;
+        case 'priority':
+          // Define priority order: high > medium > low
+          const priorityOrder: Record<string, number> = { high: 3, medium: 2, low: 1 };
+          aValue = priorityOrder[a.priority] || 0;
+          bValue = priorityOrder[b.priority] || 0;
+          break;
+        default:
+          aValue = a.title.toLowerCase();
+          bValue = b.title.toLowerCase();
+      }
 
-    if (filterOptions.sortOrder === 'asc') {
-      return aValue > bValue ? 1 : -1;
-    } else {
-      return aValue < bValue ? 1 : -1;
-    }
-  });
+      if (filterOptions.sortOrder === 'asc') {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+  }, [allTasks, filterOptions.sortBy, filterOptions.sortOrder]);
 
   // Update filters function
   const updateFilters = (newFilters: Partial<FilterOptions>) => {
@@ -200,12 +216,12 @@ export const useTasks = (initialBackendFilters?: GetTasksFilters) => {
 
   // Calculate stats based on the tasks returned from backend (which are already filtered)
   // Note: These stats reflect the backend-filtered results, not the full dataset
-  const stats = {
+  const stats = useMemo(() => ({
     total: sortedTasks.length,
     active: sortedTasks.filter(t => !t.completed).length,
     completed: sortedTasks.filter(t => t.completed).length,
     overdue: sortedTasks.filter(t => t.due_date && new Date(t.due_date) < new Date() && !t.completed).length
-  };
+  }), [sortedTasks]);
 
   return {
     tasks: sortedTasks,
@@ -219,6 +235,7 @@ export const useTasks = (initialBackendFilters?: GetTasksFilters) => {
     updateTask,
     deleteTask,
     deleteCompletedTasks: deleteCompletedTasksMutation,
+    deleteAllTasks: deleteAllTasksMutation,
     toggleTaskCompletion,
     filters: filterOptions,
     updateFilters,

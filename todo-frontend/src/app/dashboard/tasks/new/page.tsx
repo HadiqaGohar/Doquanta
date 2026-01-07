@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Calendar, Clock, Flag } from 'lucide-react';
+import { Plus, Calendar, Clock, Flag, Bell } from 'lucide-react';
 import { TaskPriority } from '@/features/tasks/types';
 
 export default function AddTaskPage() {
@@ -19,6 +19,7 @@ export default function AddTaskPage() {
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState('medium');
   const [dueDate, setDueDate] = useState('');
+  const [reminderTime, setReminderTime] = useState('');
   const { addTask } = useTasks();
   const { user } = useUser();
   const router = useRouter();
@@ -31,11 +32,27 @@ export default function AddTaskPage() {
       return;
     }
 
+    // Combine date and time if both are present, or use just date/time appropriately
+    let finalReminderTime = null;
+    if (reminderTime) {
+       // If we have a due date, assume reminder is on that day at that time.
+       // If no due date, assume reminder is today at that time (or just pass the time string if API handles it, but API expects ISO).
+       // Simplest: combine dueDate + reminderTime if both exist.
+       if (dueDate) {
+         finalReminderTime = new Date(`${dueDate}T${reminderTime}`);
+       } else {
+         // If no due date, use today's date with the time
+         const today = new Date().toISOString().split('T')[0];
+         finalReminderTime = new Date(`${today}T${reminderTime}`);
+       }
+    }
+
     addTask.mutate({
       title: title.trim(),
       description,
       priority: priority as TaskPriority,
       due_date: dueDate ? new Date(dueDate) : null,
+      reminder_time: finalReminderTime,
     });
 
     // Reset form
@@ -43,6 +60,7 @@ export default function AddTaskPage() {
     setDescription('');
     setPriority('medium');
     setDueDate('');
+    setReminderTime('');
     
     // Redirect back to tasks
     router.push('/dashboard/tasks');
@@ -113,6 +131,20 @@ export default function AddTaskPage() {
                     className="pl-10"
                   />
                   <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="reminderTime">Reminder / Alarm Time</Label>
+                <div className="relative">
+                  <Input
+                    id="reminderTime"
+                    type="time"
+                    value={reminderTime}
+                    onChange={(e) => setReminderTime(e.target.value)}
+                    className="pl-10"
+                  />
+                  <Bell className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
                 </div>
               </div>
             </div>

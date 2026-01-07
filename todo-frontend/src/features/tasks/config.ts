@@ -1,4 +1,13 @@
 import { TaskPriority, TaskCategory, RecurrencePattern } from "./types";
+import { ReactNode } from "react";
+import { 
+  Briefcase, 
+  Home, 
+  Activity, 
+  Wallet, 
+  BookOpen, 
+  Pin 
+} from "lucide-react";
 
 // Priority configuration
 export const priorityConfig = {
@@ -12,12 +21,12 @@ export type PriorityConfig = typeof priorityConfig;
 
 // Category configuration
 export const categoryConfig = {
-  work: { label: "Work", emoji: "💼" },
-  personal: { label: "Personal", emoji: "🏠" },
-  health: { label: "Health", emoji: "💪" },
-  finance: { label: "Finance", emoji: "💰" },
-  learning: { label: "Learning", emoji: "📚" },
-  other: { label: "Other", emoji: "📌" },
+  work: { label: "Work", icon: Briefcase },
+  personal: { label: "Personal", icon: Home },
+  health: { label: "Health", icon: Activity },
+  finance: { label: "Finance", icon: Wallet },
+  learning: { label: "Learning", icon: BookOpen },
+  other: { label: "Other", icon: Pin },
 };
 
 export type CategoryConfig = typeof categoryConfig;
@@ -31,12 +40,12 @@ export const priorityOptions = [
 
 // Category options for selects/dropdowns
 export const categoryOptions = [
-  { value: "work" as TaskCategory, label: "Work", emoji: "💼" },
-  { value: "personal" as TaskCategory, label: "Personal", emoji: "🏠" },
-  { value: "health" as TaskCategory, label: "Health", emoji: "💪" },
-  { value: "finance" as TaskCategory, label: "Finance", emoji: "💰" },
-  { value: "learning" as TaskCategory, label: "Learning", emoji: "📚" },
-  { value: "other" as TaskCategory, label: "Other", emoji: "📌" },
+  { value: "work" as TaskCategory, label: "Work", icon: Briefcase },
+  { value: "personal" as TaskCategory, label: "Personal", icon: Home },
+  { value: "health" as TaskCategory, label: "Health", icon: Activity },
+  { value: "finance" as TaskCategory, label: "Finance", icon: Wallet },
+  { value: "learning" as TaskCategory, label: "Learning", icon: BookOpen },
+  { value: "other" as TaskCategory, label: "Other", icon: Pin },
 ];
 
 // Status options for filters

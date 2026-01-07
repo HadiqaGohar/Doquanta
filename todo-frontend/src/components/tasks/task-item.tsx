@@ -10,15 +10,7 @@ import {
   CalendarIcon,
   ClockIcon,
   FlagIcon,
-  
-  MoreVerticalIcon
 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { cn } from "@/utils/shadcn";
 import { format, isToday, isTomorrow, isPast } from "date-fns";
 import { useTasks } from "@/features/tasks/hooks";
@@ -32,11 +24,12 @@ interface TaskItemProps {
 }
 
 export function TaskItem({ task }: TaskItemProps) {
-  const { updateTask, deleteTask, toggleTaskCompletion } = useTasks();
+  const { deleteTask, toggleTaskCompletion } = useTasks();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const priority = priorityConfig[task.priority as keyof typeof priorityConfig] || priorityConfig.medium;
   const category = categoryConfig[task.category as keyof typeof categoryConfig] || categoryConfig.other;
+  const CategoryIcon = category.icon;
 
   const formatDueDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -52,10 +45,14 @@ export function TaskItem({ task }: TaskItemProps) {
   };
 
   const handleDelete = () => {
-    deleteTask.mutateAsync({ id: task.id });
+    if (confirm("Are you sure you want to delete this task?")) {
+      deleteTask.mutateAsync({ id: task.id });
+    }
   };
 
   const handleToggleCompletion = (checked: CheckedState) => {
+    // Backend just toggles, so the boolean sent here is technically ignored by backend logic 
+    // but useful for optimistic UI if needed.
     toggleTaskCompletion.mutateAsync({ id: task.id, completed: Boolean(checked) });
   };
 
@@ -64,15 +61,15 @@ export function TaskItem({ task }: TaskItemProps) {
       className={cn(
         "group flex items-start gap-4 p-4 rounded-xl bg-card border transition-all duration-200",
         "hover:shadow-card hover:border-accent/20",
-        task.completed && "opacity-60"
+        task.completed && "opacity-60 bg-gray-50"
       )}
     >
       {/* Checkbox */}
-      <div className="pt-0.5">
+      <div className="pt-1">
         <Checkbox
           checked={task.completed}
           onCheckedChange={handleToggleCompletion}
-          className="h-5 w-5 rounded-full border-2 data-[state=checked]:bg-accent data-[state=checked]:border-accent"
+          className="h-5 w-5 rounded-full border-2 data-[state=checked]:bg-accent data-[state=checked]:border-accent transition-all duration-200"
         />
       </div>
 
@@ -81,35 +78,33 @@ export function TaskItem({ task }: TaskItemProps) {
         <div className="flex items-start justify-between gap-2">
           <h3
             className={cn(
-              "font-medium text-foreground font-body leading-tight",
+              "font-medium text-foreground font-body leading-tight transition-all duration-200",
               task.completed && "line-through text-muted-foreground"
             )}
           >
             {task.title}
           </h3>
 
-          {/* Actions - visible on hover */}
+          {/* Actions - visible on hover or mobile */}
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon-sm" className="h-7 w-7">
-                  <MoreVerticalIcon className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleEdit}>
-                  <Edit3Icon className="h-4 w-4 mr-2 text-accent-foreground" />
-                  Edit
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={handleDelete}
-                  className="text-destructive focus:text-destructive"
-                >
-                  <Trash2Icon className="h-4 w-4 mr-2 text-destructive" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Button 
+              variant="ghost" 
+              size="icon-sm" 
+              className="h-8 w-8 text-muted-foreground hover:text-accent-foreground hover:bg-accent/10"
+              onClick={handleEdit}
+              title="Edit Task"
+            >
+              <Edit3Icon className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon-sm" 
+              className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+              onClick={handleDelete}
+              title="Delete Task"
+            >
+              <Trash2Icon className="h-4 w-4" />
+            </Button>
           </div>
         </div>
 
@@ -123,12 +118,13 @@ export function TaskItem({ task }: TaskItemProps) {
         {/* Tags & Meta */}
         <div className="flex flex-wrap items-center gap-2 mt-3">
           {/* Category */}
-          <span className="text-sm">
-            {category.emoji} {category.label}
+          <span className="flex items-center text-sm text-muted-foreground gap-1">
+            <CategoryIcon className="h-4 w-4" />
+            {category.label}
           </span>
 
           {/* Priority */}
-          <Badge variant="outline" className={cn("text-xs border", priority.className)}>
+          <Badge variant="outline" className={cn("text-xs border px-2 py-0.5", priority.className)}>
             <FlagIcon className="h-3 w-3 mr-1" />
             {priority.label}
           </Badge>
@@ -138,8 +134,10 @@ export function TaskItem({ task }: TaskItemProps) {
             <Badge
               variant="outline"
               className={cn(
-                "text-xs",
-                isOverdue && "border-destructive/20 bg-destructive/10 text-destructive"
+                "text-xs px-2 py-0.5",
+                isOverdue 
+                  ? "border-destructive/20 bg-destructive/10 text-destructive" 
+                  : "border-gray-200 bg-gray-50 text-gray-600"
               )}
             >
               <CalendarIcon className="h-3 w-3 mr-1" />
@@ -147,9 +145,17 @@ export function TaskItem({ task }: TaskItemProps) {
             </Badge>
           )}
 
+          {/* Reminder Time (Alarm) */}
+          {task.reminder_time && (
+            <Badge variant="outline" className="text-xs px-2 py-0.5 border-blue-200 bg-blue-50 text-blue-600">
+              <ClockIcon className="h-3 w-3 mr-1" />
+              {format(new Date(task.reminder_time), "h:mm a")}
+            </Badge>
+          )}
+
           {/* Recurrence */}
           {task.is_recurring && (
-            <Badge variant="outline" className="text-xs">
+            <Badge variant="outline" className="text-xs px-2 py-0.5">
               <ClockIcon className="h-3 w-3 mr-1" />
               {task.recurrence_pattern}
             </Badge>

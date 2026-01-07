@@ -80,6 +80,7 @@ export default function TaskDetailPage() {
 
   const priority = priorityConfig[task.priority as keyof typeof priorityConfig] || priorityConfig.medium;
   const category = categoryConfig[task.category as keyof typeof categoryConfig] || categoryConfig.other;
+  const CategoryIcon = category.icon;
 
   const handleSave = async () => {
     try {
@@ -202,8 +203,9 @@ export default function TaskDetailPage() {
                       <FlagIcon className="h-3 w-3 mr-1" />
                       {priority.label}
                     </Badge>
-                    <Badge variant="outline">
-                      {category.emoji} {category.label}
+                    <Badge variant="outline" className="flex items-center gap-1">
+                      <CategoryIcon className="h-3 w-3" />
+                      {category.label}
                     </Badge>
                   </div>
                 </CardTitle>

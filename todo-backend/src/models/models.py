@@ -33,6 +33,9 @@ class Task(SQLModel, table=True):
     recurrence_end_date: Optional[datetime] = Field(default=None)
     max_occurrences: Optional[int] = Field(default=None)
 
+    parent_id: Optional[int] = Field(default=None, foreign_key="task.id")
+    attachments: str = Field(default="[]", description="JSON list of attachment URLs")
+
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 

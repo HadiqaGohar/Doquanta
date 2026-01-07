@@ -39,7 +39,9 @@ def list_tools() -> List[Tool]:
                     "is_recurring": {"type": "boolean", "description": "Whether the task is recurring"},
                     "recurrence_pattern": {"type": "string", "enum": ["daily", "weekly", "monthly", "yearly"], "description": "Pattern for recurring tasks"},
                     "recurrence_interval": {"type": "integer", "description": "Interval for recurring tasks (e.g., every 2 weeks)"},
-                    "recurrence_end_date": {"type": "string", "description": "End date for recurring tasks in ISO format or natural language"}
+                    "recurrence_end_date": {"type": "string", "description": "End date for recurring tasks in ISO format or natural language"},
+                    "parent_id": {"type": "integer", "description": "ID of parent task if this is a subtask"},
+                    "attachments": {"type": "string", "description": "JSON string list of attachment URLs"}
                 },
                 "required": ["user_id", "title"]
             }
@@ -100,7 +102,9 @@ def list_tools() -> List[Tool]:
                     "is_recurring": {"type": "boolean", "description": "Whether the task is recurring"},
                     "recurrence_pattern": {"type": "string", "enum": ["daily", "weekly", "monthly", "yearly"], "description": "Pattern for recurring tasks"},
                     "recurrence_interval": {"type": "integer", "description": "Interval for recurring tasks"},
-                    "recurrence_end_date": {"type": "string", "description": "End date for recurring tasks in ISO format or natural language"}
+                    "recurrence_end_date": {"type": "string", "description": "End date for recurring tasks in ISO format or natural language"},
+                    "parent_id": {"type": "integer", "description": "ID of parent task if this is a subtask"},
+                    "attachments": {"type": "string", "description": "JSON string list of attachment URLs"}
                 },
                 "required": ["user_id", "task_id"]
             }
@@ -134,6 +138,9 @@ async def call_tool(tool_name: str, arguments: Dict[str, Any]) -> List[TextConte
                 recurrence_pattern = arguments.get("recurrence_pattern")
                 recurrence_interval = arguments.get("recurrence_interval")
                 recurrence_end_date_raw = arguments.get("recurrence_end_date")
+                
+                parent_id = arguments.get("parent_id")
+                attachments = arguments.get("attachments", "[]")
 
                 # Parse date/time values
                 due_date = None
@@ -164,6 +171,8 @@ async def call_tool(tool_name: str, arguments: Dict[str, Any]) -> List[TextConte
                         recurrence_pattern=recurrence_pattern,
                         recurrence_interval=recurrence_interval,
                         recurrence_end_date=recurrence_end_date,
+                        parent_id=parent_id,
+                        attachments=attachments,
                         created_at=datetime.now()
                     )
                     session.add(db_task)
@@ -270,7 +279,7 @@ async def call_tool(tool_name: str, arguments: Dict[str, Any]) -> List[TextConte
                         result = {"error": "Task not found or unauthorized"}
                     else:
                         # Update fields if provided
-                        update_fields = ["title", "description", "priority", "category", "completed"]
+                        update_fields = ["title", "description", "priority", "category", "completed", "parent_id", "attachments"]
                         for field in update_fields:
                             value = arguments.get(field)
                             if value is not None:

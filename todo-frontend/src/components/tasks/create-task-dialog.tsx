@@ -145,7 +145,7 @@ export function CreateTaskDialog({ open, onOpenChange }: CreateTaskDialogProps) 
                         {categoryOptions.map((option) => (
                           <SelectItem key={option.value} value={option.value}>
                             <span className="flex items-center gap-2">
-                              <span>{option.emoji}</span>
+                              <option.icon className="h-4 w-4" />
                               <span>{option.label}</span>
                             </span>
                           </SelectItem>

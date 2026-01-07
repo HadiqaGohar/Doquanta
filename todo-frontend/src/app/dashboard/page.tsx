@@ -12,7 +12,8 @@ import {
   Archive,
   BarChart3,
   TrendingUp,
-  Activity
+  Activity,
+  AlertCircle
 } from "lucide-react";
 import { useTasks } from "@/features/tasks/hooks";
 import { useUser } from "@/features/auth/hooks";
@@ -30,6 +31,20 @@ export default function DashboardPage() {
       (task) =>
         task.due_date &&
         new Date(task.due_date) >= new Date() &&
+        !task.completed
+    )
+    .sort(
+      (a, b) =>
+        new Date(a.due_date!).getTime() - new Date(b.due_date!).getTime()
+    )
+    .slice(0, 5);
+
+  // Get overdue tasks
+  const overdueTasks = tasks
+    .filter(
+      (task) =>
+        task.due_date &&
+        new Date(task.due_date) < new Date() &&
         !task.completed
     )
     .sort(
@@ -94,21 +109,19 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg">
+        <Card className="bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-purple-100">Completion Rate</CardTitle>
-            <TrendingUp className="h-5 w-5" />
+            <CardTitle className="text-sm font-medium text-red-100">Overdue</CardTitle>
+            <AlertCircle className="h-5 w-5" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">
-              {stats?.total ? Math.round((stats.completed / stats.total) * 100) : 0}%
-            </div>
-            <p className="text-purple-100 text-sm mt-1">Overall completion</p>
+            <div className="text-3xl font-bold">{stats?.overdue || 0}</div>
+            <p className="text-red-100 text-sm mt-1">Tasks past due date</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Quick Add and Upcoming Tasks */}
+      {/* Quick Add and Upcoming/Overdue Tasks */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Quick Add */}
         <Card className="bg-white shadow-lg">
@@ -123,61 +136,105 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Upcoming Tasks */}
-        <Card className="bg-white shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-[#AADE81]" />
-              Upcoming Tasks
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {upcomingTasks.length > 0 ? (
-              <div className="space-y-3">
-                {upcomingTasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className="flex items-center p-3 border rounded-lg hover:bg-gray-50 group"
-                  >
-                    <button
-                      onClick={() =>
-                        toggleTaskCompletion.mutate({
-                          id: task.id,
-                  
-                          completed: true,
-                        })
-                      }
-                      className="mr-3 p-1 rounded-full border-2 border-gray-200 text-transparent hover:border-[#AADE81] hover:text-[#AADE81] transition-colors"
+        <div className="space-y-6">
+          {/* Overdue Tasks */}
+          {overdueTasks.length > 0 && (
+            <Card className="bg-white shadow-lg border-l-4 border-l-red-500">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-red-600">
+                  <AlertCircle className="h-5 w-5" />
+                  Overdue Tasks
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {overdueTasks.map((task) => (
+                    <div
+                      key={task.id}
+                      className="flex items-center p-3 border rounded-lg bg-red-50 hover:bg-red-100 group transition-colors"
                     >
-                      <CheckIcon className="h-4 w-4" />
-                    </button>
-                    <div className="flex-1">
-                      <div className="font-medium">{task.title}</div>
-                      <div className="text-sm text-gray-500">
-                        Due: {new Date(task.due_date!).toLocaleDateString()}
+                      <button
+                        onClick={() =>
+                          toggleTaskCompletion.mutate({
+                            id: task.id,
+                            completed: true,
+                          })
+                        }
+                        className="mr-3 p-1 rounded-full border-2 border-red-200 text-transparent hover:border-red-500 hover:text-red-500 transition-colors"
+                      >
+                        <CheckIcon className="h-4 w-4" />
+                      </button>
+                      <div className="flex-1">
+                        <div className="font-medium text-red-900">{task.title}</div>
+                        <div className="text-sm text-red-700 font-semibold">
+                          Due: {new Date(task.due_date!).toLocaleDateString()}
+                        </div>
                       </div>
+                      <span className="px-2 py-1 rounded-full text-xs bg-red-200 text-red-800 font-bold">
+                        Late
+                      </span>
                     </div>
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs ${
-                        task.priority === "high"
-                          ? "bg-red-100 text-red-800"
-                          : task.priority === "medium"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-green-100 text-green-800"
-                      }`}
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Upcoming Tasks */}
+          <Card className="bg-white shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-[#AADE81]" />
+                Upcoming Tasks
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {upcomingTasks.length > 0 ? (
+                <div className="space-y-3">
+                  {upcomingTasks.map((task) => (
+                    <div
+                      key={task.id}
+                      className="flex items-center p-3 border rounded-lg hover:bg-gray-50 group"
                     >
-                      {task.priority}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                No upcoming tasks
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                      <button
+                        onClick={() =>
+                          toggleTaskCompletion.mutate({
+                            id: task.id,
+                            completed: true,
+                          })
+                        }
+                        className="mr-3 p-1 rounded-full border-2 border-gray-200 text-transparent hover:border-[#AADE81] hover:text-[#AADE81] transition-colors"
+                      >
+                        <CheckIcon className="h-4 w-4" />
+                      </button>
+                      <div className="flex-1">
+                        <div className="font-medium">{task.title}</div>
+                        <div className="text-sm text-gray-500">
+                          Due: {new Date(task.due_date!).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs ${
+                          task.priority === "high"
+                            ? "bg-red-100 text-red-800"
+                            : task.priority === "medium"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : "bg-green-100 text-green-800"
+                        }`}
+                      >
+                        {task.priority}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  No upcoming tasks
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* Recent Tasks */}

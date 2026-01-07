@@ -17,6 +17,7 @@ from .api.reminders import router as reminders_router
 from .api.notifications import router as notifications_router
 from .api.websocket import websocket_endpoint
 from .core.settings import settings
+from .services.date_time_parser import date_time_parser_service
 
 from agents import Agent, Runner, AsyncOpenAI, OpenAIChatCompletionsModel, RunConfig
 from dotenv import load_dotenv
@@ -53,7 +54,7 @@ def on_startup():
 class DatabaseStorage:
     """Handles persistent storage of tasks using the database engine."""
 
-    def add_task(self, user_id: str, title: str, description: str = "", priority: str = "medium", category: str = "other") -> Task:
+    def add_task(self, user_id: str, title: str, description: str = "", priority: str = "medium", category: str = "other", due_date: Optional[datetime] = None, parent_id: Optional[int] = None, attachments: str = "[]") -> Task:
         """Add a new task to storage for a specific user."""
         with Session(engine) as session:
             db_task = Task(
@@ -63,6 +64,9 @@ class DatabaseStorage:
                 completed=False,
                 priority=priority,
                 category=category,
+                due_date=due_date,
+                parent_id=parent_id,
+                attachments=attachments,
                 created_at=datetime.now()
             )
             session.add(db_task)
@@ -76,11 +80,11 @@ class TaskManager:
     def __init__(self):
         self.storage = DatabaseStorage()
 
-    def add_task(self, user_id: str, title: str, description: str = "", priority: str = "medium", category: str = "other") -> Task:
+    def add_task(self, user_id: str, title: str, description: str = "", priority: str = "medium", category: str = "other", due_date: Optional[datetime] = None, parent_id: Optional[int] = None, attachments: str = "[]") -> Task:
         """Add a new task for a specific user and return it."""
         if not title.strip():
             raise HTTPException(status_code=400, detail="Task title cannot be empty.")
-        return self.storage.add_task(user_id, title, description, priority, category)
+        return self.storage.add_task(user_id, title, description, priority, category, due_date, parent_id, attachments)
 
 # Initialize the task manager
 task_manager = TaskManager()
@@ -221,13 +225,31 @@ async def health_check():
 @app.post("/api/chat/ask-ai")
 async def ask_ai_help(request: ChatRequest, current_user_id: str = Security(get_current_user_id)):
     try:
-        def add_task(title: str, description: str = "", priority: str = "medium", category: str = "other") -> str:
-            """Adds a new task to the user's todo list."""
+        def add_task(title: str, description: str = "", priority: str = "medium", category: str = "other", due_date: str = "", parent_id: int = None, attachments: str = "[]") -> str:
+            """
+            Adds a new task to the user's todo list.
+            
+            Args:
+                title: The short name of the task.
+                description: Optional details.
+                priority: 'low', 'medium', or 'high'.
+                category: 'work', 'personal', etc.
+                due_date: Natural language string (e.g., 'tomorrow', 'next friday').
+                parent_id: Optional ID of a parent task if this is a subtask.
+                attachments: JSON string list of file URLs.
+            """
             try:
-                task = task_manager.add_task(current_user_id, title, description, priority, category)
-                return f"Successfully added task: '{task.title}' (ID: {task.id})"
+                parsed_due_date = None
+                if due_date:
+                    parsed_due_date = date_time_parser_service.parse_datetime(due_date)
+                
+                task = task_manager.add_task(current_user_id, title, description, priority, category, parsed_due_date, parent_id, attachments)
+                return f"Successfully added task: '{task.title}' (ID: {task.id}) with Due Date: {task.due_date}"
             except Exception as e:
                 return f"Error adding task: {str(e)}"
+        
+        # Fix for 'function' object has no attribute 'name'
+        add_task.name = "add_task"
 
         help_response = await generate_ai_help_response(request.message, tools=[add_task])
         session_id = request.session_id or str(uuid.uuid4())
@@ -259,7 +281,17 @@ async def generate_ai_response(message: str) -> str:
 
 async def generate_ai_help_response(message: str, tools: List[Callable] = []) -> str:
     try:
-        agent = Agent(name="Help Assistant", instructions="You are a helpful assistant. Use tools when requested.", model=model, tools=tools)
+        instructions = (
+            "You are an intelligent task assistant. Your goal is to help the user manage their tasks efficiently.\n"
+            "When the user wants to add a task:\n"
+            "1. Ensure you have a clear 'Title'.\n"
+            "2. If 'Due Date', 'Priority', or 'Category' are missing, check the context. If you can infer them, do so.\n"
+            "3. If critical information is missing or ambiguous, ASK the user for clarification before adding the task.\n"
+            "4. Example: If user says 'meeting tomorrow', infer due_date='tomorrow'. If user says 'buy milk', ask 'When do you need this done?' or set a default if they seem casual.\n"
+            "5. You can also handle 'subtasks' (by adding multiple tasks or linking them if parent_id is available) and 'attachments' (urls).\n"
+            "6. Always confirm what you did."
+        )
+        agent = Agent(name="Help Assistant", instructions=instructions, model=model, tools=tools)
         result = await Runner.run(agent, message, run_config=config)
         return result.final_output
     except Exception as e:

@@ -155,7 +155,7 @@ export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps
                         {categoryOptions.map((option) => (
                           <SelectItem key={option.value} value={option.value}>
                             <span className="flex items-center gap-2">
-                              <span>{option.emoji}</span>
+                              <option.icon className="h-4 w-4" />
                               <span>{option.label}</span>
                             </span>
                           </SelectItem>

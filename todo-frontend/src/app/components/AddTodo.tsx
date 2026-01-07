@@ -66,7 +66,7 @@ export default function AddTodo() {
           >
             {categoryOptions.map(opt => (
               <option key={opt.value} value={opt.value}>
-                {opt.emoji} {opt.label}
+                {opt.label}
               </option>
             ))}
           </select>
