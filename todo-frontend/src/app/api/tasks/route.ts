@@ -141,3 +141,73 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    // Get the session from Better Auth
+    const session = await auth.api.getSession({
+      headers: await headers()
+    });
+
+    if (!session) {
+      console.error("No session found");
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Extract user ID from session
+    const userId = session.user.id;
+    console.log("DELETE - User ID from session:", userId);
+
+    // Ensure session is registered with backend
+    await ensureSessionRegistered();
+
+    const { pathname } = new URL(request.url);
+    const cleanApiBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/$/, "");
+    
+    let backendUrl = "";
+    if (pathname.endsWith('/all/clear')) {
+      backendUrl = `${cleanApiBaseUrl}/api/${userId}/tasks/all/clear`;
+    } else if (pathname.endsWith('/completed/clear')) {
+      backendUrl = `${cleanApiBaseUrl}/api/${userId}/tasks/completed/clear`;
+    }
+
+    if (!backendUrl) {
+       return NextResponse.json({ error: "Invalid clear action" }, { status: 400 });
+    }
+
+    console.log("DELETE - Backend URL:", backendUrl);
+
+    // Extract Better Auth session token from cookies to use as Authorization header
+    const cookies = request.headers.get('cookie') || '';
+    
+    // Support all Better Auth cookie variations
+    let sessionToken = null;
+    const betterAuthTokenMatch = cookies.match(/better-auth\.session_token=([^;]+)/);
+    const secureBetterAuthTokenMatch = cookies.match(/__Secure-better-auth\.session_token=([^;]+)/);
+    const shortTokenMatch = cookies.match(/bta-s=([^;]+)/);
+    const secureShortTokenMatch = cookies.match(/__Secure-bta-s=([^;]+)/);
+    
+    if (secureBetterAuthTokenMatch) sessionToken = secureBetterAuthTokenMatch[1];
+    else if (betterAuthTokenMatch) sessionToken = betterAuthTokenMatch[1];
+    else if (secureShortTokenMatch) sessionToken = secureShortTokenMatch[1];
+    else if (shortTokenMatch) sessionToken = shortTokenMatch[1];
+
+    // Forward the request to the backend with proper authentication
+    const response = await fetch(backendUrl, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': sessionToken ? `Bearer ${sessionToken}` : '',
+        'Cookie': cookies
+      },
+    });
+
+    console.log("DELETE - Backend response status:", response.status);
+
+    const data = await response.json();
+    return NextResponse.json(data, { status: response.status });
+  } catch (error) {
+    console.error("Error in tasks DELETE API:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}

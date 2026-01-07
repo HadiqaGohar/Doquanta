@@ -31,7 +31,7 @@ export const getTasks = async (userId: string, filters?: GetTasksFilters): Promi
   }
 
   const queryString = params.toString();
-  const url = `/api/${userId}/tasks` + (queryString ? `?${queryString}` : '');
+  const url = `/api/tasks` + (queryString ? `?${queryString}` : '');
 
   const response = await fetch(url, {
     method: 'GET',
@@ -51,7 +51,7 @@ export const getTasks = async (userId: string, filters?: GetTasksFilters): Promi
 
 // Fetch a single task by ID for the specified user
 export const getTask = async (userId: string, id: string): Promise<Task> => {
-  const response = await fetch(`/api/${userId}/tasks/${id}`, {
+  const response = await fetch(`/api/tasks/${id}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -75,7 +75,7 @@ export const createTask = async (userId: string, taskData: CreateTaskData): Prom
     reminder_time: taskData.reminder_time ? new Date(taskData.reminder_time).toISOString() : null,
   };
 
-  const response = await fetch(`/api/${userId}/tasks`, {
+  const response = await fetch(`/api/tasks`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -100,7 +100,7 @@ export const updateTask = async (userId: string, id: string, taskData: Partial<U
     reminder_time: taskData.reminder_time ? new Date(taskData.reminder_time).toISOString() : undefined,
   };
 
-  const response = await fetch(`/api/${userId}/tasks/${id}`, {
+  const response = await fetch(`/api/tasks/${id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -118,7 +118,7 @@ export const updateTask = async (userId: string, id: string, taskData: Partial<U
 
 // Delete a task for the specified user
 export const deleteTask = async (userId: string, id: string): Promise<void> => {
-  const response = await fetch(`/api/${userId}/tasks/${id}`, {
+  const response = await fetch(`/api/tasks/${id}`, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
@@ -133,7 +133,7 @@ export const deleteTask = async (userId: string, id: string): Promise<void> => {
 
 // Delete all completed tasks for the specified user
 export const deleteCompletedTasks = async (userId: string): Promise<{message: string, count: number}> => {
-  const response = await fetch(`/api/${userId}/tasks/completed/clear`, {
+  const response = await fetch(`/api/tasks/completed/clear`, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
@@ -150,7 +150,7 @@ export const deleteCompletedTasks = async (userId: string): Promise<{message: st
 
 // Delete ALL tasks for the specified user
 export const deleteAllTasks = async (userId: string): Promise<{message: string, count: number}> => {
-  const response = await fetch(`/api/${userId}/tasks/all/clear`, {
+  const response = await fetch(`/api/tasks/all/clear`, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
@@ -167,7 +167,7 @@ export const deleteAllTasks = async (userId: string): Promise<{message: string, 
 
 // Toggle task completion status for the specified user
 export const toggleTaskCompletion = async (userId: string, id: string, completed: boolean): Promise<Task> => {
-  const response = await fetch(`/api/${userId}/tasks/${id}/complete`, {
+  const response = await fetch(`/api/tasks/${id}/complete`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
