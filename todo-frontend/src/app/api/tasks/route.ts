@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     // The backend will validate the user ID against the session on its end
     const queryString = queryParams.toString();
     const cleanApiBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/$/, "");
-    const backendUrl = `${cleanApiBaseUrl}/api/${userId}/tasks/${queryString ? `?${queryString}` : ''}`;
+    const backendUrl = `${cleanApiBaseUrl}/api/${userId}/tasks${queryString ? `?${queryString}` : ''}`;
     console.log("GET - Backend URL:", backendUrl);
 
     // Extract Better Auth session token from cookies to use as Authorization header

@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, Security, File, UploadFile, Form, De
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional, Dict, Any, Callable
 import os
+import traceback
 from datetime import datetime
 from pydantic import BaseModel
 from sqlmodel import SQLModel, Session, select
@@ -225,6 +226,7 @@ async def health_check():
 @app.post("/api/chat/ask-ai")
 async def ask_ai_help(request: ChatRequest, current_user_id: str = Security(get_current_user_id)):
     try:
+        print(f"DEBUG: ask_ai_help triggered by user {current_user_id}, message: {request.message}")
         def add_task(title: str, description: str = "", priority: str = "medium", category: str = "other", due_date: str = "", parent_id: int = None, attachments: str = "[]") -> str:
             """
             Adds a new task to the user's todo list.
@@ -246,6 +248,7 @@ async def ask_ai_help(request: ChatRequest, current_user_id: str = Security(get_
                 task = task_manager.add_task(current_user_id, title, description, priority, category, parsed_due_date, parent_id, attachments)
                 return f"Successfully added task: '{task.title}' (ID: {task.id}) with Due Date: {task.due_date}"
             except Exception as e:
+                print(f"ERROR in add_task tool: {str(e)}")
                 return f"Error adding task: {str(e)}"
         
         # Fix for 'function' object has no attribute 'name'
@@ -261,6 +264,7 @@ async def ask_ai_help(request: ChatRequest, current_user_id: str = Security(get_
             user_sessions[current_user_id].append(session_id)
         else:
             if current_user_id not in user_sessions or session_id not in user_sessions[current_user_id]:
+                print(f"DEBUG: Access forbidden for session {session_id}")
                 raise HTTPException(status_code=403, detail="Access forbidden")
 
         ai_message = ChatMessage(id=str(uuid.uuid4()), content=help_response, sender="ai", timestamp=datetime.now(), session_id=session_id)
@@ -268,13 +272,19 @@ async def ask_ai_help(request: ChatRequest, current_user_id: str = Security(get_
 
         return ChatResponse(message=ai_message, session_id=session_id)
     except Exception as e:
+        print(f"CRITICAL ERROR in ask_ai_help: {str(e)}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 async def generate_ai_response(message: str) -> str:
     try:
         agent = Agent(name="Simple Assistant", instructions="You are a helpful assistant.", model=model)
-        result = await Runner.run(agent, message, run_config=config)
+        # Use asyncio.wait_for to prevent hanging
+        result = await asyncio.wait_for(Runner.run(agent, message, run_config=config), timeout=25.0)
         return result.final_output
+    except asyncio.TimeoutError:
+        print("AI Error: Request timed out")
+        return "The AI service is taking too long to respond. Please try again."
     except Exception as e:
         print(f"AI Error: {e}")
         return "I'm experiencing technical difficulties with the AI service."
@@ -292,11 +302,16 @@ async def generate_ai_help_response(message: str, tools: List[Callable] = []) ->
             "6. Always confirm what you did."
         )
         agent = Agent(name="Help Assistant", instructions=instructions, model=model, tools=tools)
-        result = await Runner.run(agent, message, run_config=config)
+        # Use asyncio.wait_for to prevent hanging
+        result = await asyncio.wait_for(Runner.run(agent, message, run_config=config), timeout=25.0)
         return result.final_output
+    except asyncio.TimeoutError:
+        print("AI Help Error: Request timed out")
+        return "📚 **Help with: AI Service**\n\nThe request timed out. The AI model is currently slow or unavailable. Please try a simpler request or wait a moment."
     except Exception as e:
         print(f"AI Help Error: {e}")
-        return f"📚 **Help with: {message}**\n\nI encountered an error while processing your request. Please try again later."
+        traceback.print_exc()
+        return f"📚 **Help with: {message}**\n\nI encountered an error while processing your request: {str(e)}. Please try again later."
 
 # Include API routers
 app.include_router(tasks_router)
