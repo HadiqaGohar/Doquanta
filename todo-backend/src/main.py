@@ -181,8 +181,8 @@ config = RunConfig(
     tracing_disabled=True,
 )
 
-chat_sessions: Dict[str, List[Any]] = {{}}  # session_id -> messages
-user_sessions: Dict[str, List[str]] = {{}}  # user_id -> [session_ids]
+chat_sessions: Dict[str, List[Any]] = {}  # session_id -> messages
+user_sessions: Dict[str, List[str]] = {}  # user_id -> [session_ids]
 
 class ChatMessage(BaseModel):
     id: str
