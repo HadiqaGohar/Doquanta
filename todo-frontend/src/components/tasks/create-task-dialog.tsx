@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
-import { CalendarIcon, ClockIcon, RefreshCwIcon } from "lucide-react";
+import { CalendarIcon, ClockIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
 import { cn } from "@/utils/shadcn";
 import { useTasks } from "@/features/tasks/hooks";
 import { categoryOptions, priorityOptions, recurrenceOptions } from "@/features/tasks/config";
@@ -232,31 +232,73 @@ export function CreateTaskDialog({ open, onOpenChange }: CreateTaskDialogProps) 
                     <ClockIcon className="h-4 w-4" />
                     Reminder
                   </FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {field.value ? format(field.value, "PPP 'at' p") : "Set a reminder"}
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value || undefined}
-                        onSelect={field.onChange}
-                        autoFocus
-                        className="pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <div className="flex gap-2">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-[240px] justify-start text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {field.value ? format(field.value, "PPP") : "Pick a date"}
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value || undefined}
+                          onSelect={(date) => {
+                            if (date) {
+                              const hours = field.value ? field.value.getHours() : 9;
+                              const minutes = field.value ? field.value.getMinutes() : 0;
+                              date.setHours(hours, minutes, 0, 0);
+                              field.onChange(date);
+                            } else {
+                              field.onChange(null);
+                            }
+                          }}
+                          autoFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <Input
+                      type="time"
+                      className="w-[120px]"
+                      value={field.value ? format(field.value, "HH:mm") : ""}
+                      onChange={(e) => {
+                        const time = e.target.value;
+                        if (!time) return;
+                        const [hours, minutes] = time.split(':').map(Number);
+                        
+                        // Default to due_date if available, else today
+                        const currentDueDate = form.getValues("due_date");
+                        const date = field.value 
+                          ? new Date(field.value) 
+                          : (currentDueDate ? new Date(currentDueDate) : new Date());
+                          
+                        date.setHours(hours, minutes, 0, 0);
+                        field.onChange(date);
+                      }}
+                    />
+                    {field.value && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => field.onChange(null)}
+                        className="h-10 w-10 text-muted-foreground hover:text-destructive"
+                        title="Clear Reminder"
+                      >
+                        <Trash2Icon className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}

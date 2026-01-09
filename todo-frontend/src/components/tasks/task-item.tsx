@@ -1,7 +1,7 @@
 'use client';
 
 import { Task } from "@/features/tasks/types";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -10,32 +10,46 @@ import {
   CalendarIcon,
   ClockIcon,
   FlagIcon,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/utils/shadcn";
 import { format, isToday, isTomorrow, isPast } from "date-fns";
 import { useTasks } from "@/features/tasks/hooks";
-import { CheckedState } from "@radix-ui/react-checkbox";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { EditTaskDialog } from "./edit-task-dialog";
 import { priorityConfig, categoryConfig } from "@/features/tasks/config";
+import toast from "react-hot-toast";
 
 interface TaskItemProps {
   task: Task;
+  onToggle?: (taskId: string, completed: boolean) => void;
 }
 
-export function TaskItem({ task }: TaskItemProps) {
+export function TaskItem({ task, onToggle }: TaskItemProps) {
   const { deleteTask, toggleTaskCompletion } = useTasks();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [isToggling, setIsToggling] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const priority = priorityConfig[task.priority as keyof typeof priorityConfig] || priorityConfig.medium;
   const category = categoryConfig[task.category as keyof typeof categoryConfig] || categoryConfig.other;
   const CategoryIcon = category.icon;
 
   const formatDueDate = (dateString: string) => {
+    if (!mounted) return ""; // Prevent SSR mismatch
     const date = new Date(dateString);
     if (isToday(date)) return "Today";
     if (isTomorrow(date)) return "Tomorrow";
     return format(date, "MMM d");
+  };
+
+  const formatReminderTime = (dateString: string) => {
+    if (!mounted) return "";
+    return format(new Date(dateString), "h:mm a");
   };
 
   const isOverdue = task.due_date && !task.completed && isPast(new Date(task.due_date));
@@ -44,16 +58,40 @@ export function TaskItem({ task }: TaskItemProps) {
     setEditDialogOpen(true);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (confirm("Are you sure you want to delete this task?")) {
-      deleteTask.mutateAsync({ id: task.id });
+      try {
+        await deleteTask.mutateAsync({ id: task.id });
+        toast.success("Task deleted successfully");
+      } catch (error) {
+        toast.error("Failed to delete task");
+      }
     }
   };
 
-  const handleToggleCompletion = (checked: CheckedState) => {
-    // Backend just toggles, so the boolean sent here is technically ignored by backend logic 
-    // but useful for optimistic UI if needed.
-    toggleTaskCompletion.mutateAsync({ id: task.id, completed: Boolean(checked) });
+  const handleToggleCompletion = async (checked: boolean) => {
+    if (isToggling) return;
+    
+    setIsToggling(true);
+    try {
+      const isCompleted = checked;
+      console.log(`DEBUG: Toggling task ${task.id} to ${isCompleted}`);
+      
+      await toggleTaskCompletion.mutateAsync({ id: task.id, completed: isCompleted });
+      
+      if (onToggle) onToggle(task.id, isCompleted);
+      
+      if (isCompleted) {
+        toast.success("Task marked as completed! 🎉");
+      } else {
+        toast.success("Task marked as pending");
+      }
+    } catch (error: any) {
+      console.error("Toggle Error:", error);
+      toast.error(`Error: ${error.message || "Failed to update task status"}`);
+    } finally {
+      setIsToggling(false);
+    }
   };
 
   return (<>
@@ -64,13 +102,17 @@ export function TaskItem({ task }: TaskItemProps) {
         task.completed && "opacity-60 bg-gray-50"
       )}
     >
-      {/* Checkbox */}
-      <div className="pt-1">
-        <Checkbox
-          checked={task.completed}
-          onCheckedChange={handleToggleCompletion}
-          className="h-5 w-5 rounded-full border-2 data-[state=checked]:bg-accent data-[state=checked]:border-accent transition-all duration-200"
-        />
+      {/* Switch / Loading Spinner */}
+      <div className="pt-1 flex items-center justify-center relative">
+        {isToggling ? (
+          <Loader2 className="h-5 w-5 animate-spin text-accent" />
+        ) : (
+          <Switch
+            checked={task.completed}
+            onCheckedChange={handleToggleCompletion}
+            className="data-[state=checked]:bg-accent"
+          />
+        )}
       </div>
 
       {/* Content */}
@@ -130,7 +172,7 @@ export function TaskItem({ task }: TaskItemProps) {
           </Badge>
 
           {/* Due Date */}
-          {task.due_date && (
+          {task.due_date && mounted && (
             <Badge
               variant="outline"
               className={cn(
@@ -146,10 +188,10 @@ export function TaskItem({ task }: TaskItemProps) {
           )}
 
           {/* Reminder Time (Alarm) */}
-          {task.reminder_time && (
+          {task.reminder_time && mounted && (
             <Badge variant="outline" className="text-xs px-2 py-0.5 border-blue-200 bg-blue-50 text-blue-600">
               <ClockIcon className="h-3 w-3 mr-1" />
-              {format(new Date(task.reminder_time), "h:mm a")}
+              {formatReminderTime(task.reminder_time)}
             </Badge>
           )}
 
