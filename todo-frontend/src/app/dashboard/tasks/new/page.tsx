@@ -42,16 +42,27 @@ export default function AddTaskPage() {
          finalReminderTime = new Date(`${dueDate}T${reminderTime}`);
        } else {
          // If no due date, use today's date with the time
-         const today = new Date().toISOString().split('T')[0];
+         // Get local date string instead of ISO (which is UTC)
+         const now = new Date();
+         const year = now.getFullYear();
+         const month = String(now.getMonth() + 1).padStart(2, '0');
+         const day = String(now.getDate()).padStart(2, '0');
+         const today = `${year}-${month}-${day}`;
          finalReminderTime = new Date(`${today}T${reminderTime}`);
        }
+    }
+
+    let parsedDueDate = null;
+    if (dueDate) {
+      const [y, m, d] = dueDate.split('-').map(Number);
+      parsedDueDate = new Date(y, m - 1, d);
     }
 
     addTask.mutate({
       title: title.trim(),
       description,
       priority: priority as TaskPriority,
-      due_date: dueDate ? new Date(dueDate) : null,
+      due_date: parsedDueDate,
       reminder_time: finalReminderTime,
     });
 

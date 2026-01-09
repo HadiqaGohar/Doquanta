@@ -9,6 +9,7 @@ import { Task } from "@/features/tasks/types";
 import { cn } from "@/utils/shadcn";
 import { useTasks } from "@/features/tasks/hooks";
 import { categoryOptions, priorityOptions, recurrenceOptions } from "@/features/tasks/config";
+import toast from "react-hot-toast";
 
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -240,33 +241,45 @@ export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps
                 <FormItem className="flex flex-col">
                   <FormLabel className="flex items-center gap-2">
                     <ClockIcon className="h-4 w-4" />
-                    Reminder
+                    Reminder Time
                   </FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {field.value ? format(field.value, "PPP 'at' p") : "Set a reminder"}
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value || undefined}
-                        onSelect={field.onChange}
-                        autoFocus
-                        className="pointer-events-auto"
+                  <FormControl>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="time"
+                        value={field.value ? format(field.value, "HH:mm") : ""}
+                        onChange={(e) => {
+                          const time = e.target.value;
+                          if (!time) {
+                            field.onChange(null);
+                            return;
+                          }
+                          const [hours, minutes] = time.split(':').map(Number);
+                          
+                          // Default to due_date if available, else today
+                          const currentDueDate = form.getValues("due_date");
+                          const date = field.value 
+                            ? new Date(field.value) 
+                            : (currentDueDate ? new Date(currentDueDate) : new Date());
+                            
+                          date.setHours(hours, minutes, 0, 0);
+                          field.onChange(date);
+                        }}
+                        className="w-full"
                       />
-                    </PopoverContent>
-                  </Popover>
+                      {field.value && (
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => field.onChange(null)}
+                          className="text-xs text-muted-foreground"
+                        >
+                          Clear
+                        </Button>
+                      )}
+                    </div>
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

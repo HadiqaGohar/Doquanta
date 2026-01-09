@@ -19,12 +19,18 @@ export default function AddTodo() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (title.trim() && user?.id) {
+      let parsedDate = null;
+      if (dueDate) {
+        const [y, m, d] = dueDate.split('-').map(Number);
+        parsedDate = new Date(y, m - 1, d);
+      }
+      
       addTask.mutate({
         title: title.trim(),
         description: '',
         category: category as TaskCategory,
         priority: priority as TaskPriority,
-        due_date: dueDate ? new Date(dueDate) : null, // Convert string to Date or null
+        due_date: parsedDate,
       }, {
         onSuccess: () => {
           setTitle('');
