@@ -1,41 +1,21 @@
 import { betterAuth } from "better-auth";
 import { jwt } from "better-auth/plugins"
 import { nextCookies } from "better-auth/next-js";
-import { Pool } from "pg";
+import Database from "better-sqlite3";
 import { sendPasswordResetEmail, sendVerificationEmail } from "@/lib/email/send";
 import { env } from "@/utils/env";
+import path from "path";
 
-// Create a singleton pool to avoid multiple connections
-let pool: Pool | null = null;
+// Initialize SQLite database
+// We place it in the todo-backend folder so both can potentially see the same data
+const dbPath = path.resolve(process.cwd(), "../todo-backend/todo.db");
+const db = new Database(dbPath);
 
-
-function getPool() {
-  if (!pool) {
-    const isProduction = env.NODE_ENV === "production";
-    pool = new Pool({
-      connectionString: env.DATABASE_URL,
-      max: 10, // Maximum number of clients in the pool
-      idleTimeoutMillis: env.DB_IDLE_TIMEOUT || 30000,
-      connectionTimeoutMillis: env.DB_CONNECT_TIMEOUT || 10000,
-      keepAlive: true,
-      ssl: isProduction ? {
-        rejectUnauthorized: false
-      } : undefined
-    });
-
-    // Handle pool errors
-    pool.on('error', (err) => {
-      console.error('Unexpected database pool error:', err);
-    });
-  }
-  return pool;
-}
-
-// Initialize auth with auto-migration enabled
+// Initialize auth
 export const auth = betterAuth({
   baseURL: env.BETTER_AUTH_URL || env.NEXT_PUBLIC_BASE_URL,
   secret: env.BETTER_AUTH_SECRET,
-  database: getPool(),
+  database: db, // Use SQLite database instance
   advanced: {
     defaultCookieAttributes: {
       httpOnly: true,

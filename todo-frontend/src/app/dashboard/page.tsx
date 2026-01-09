@@ -64,14 +64,7 @@ export default function DashboardPage() {
             Welcome back, {user?.name || user?.email || 'User'}! Here's what's happening with your tasks.
           </p>
         </div>
-        <div>
-          <Link href="/dashboard/tasks/new">
-            <button className="bg-[#AADE81] hover:bg-[#9ad870] px-4 py-3 rounded-xl font-bold text-white shadow-md transition-colors flex items-center gap-2">
-              <Plus className="h-5 w-5" />
-              <span>New Task</span>
-            </button>
-          </Link>
-        </div>
+       
       </div>
 
       {/* Stats Cards */}

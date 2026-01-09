@@ -4,10 +4,10 @@ from contextlib import contextmanager
 
 
 # Create the database engine
+connect_args = {"check_same_thread": False} if "sqlite" in settings.database_url else {}
 engine = create_engine(
     settings.database_url,
-    # Add any additional engine configuration options here
-    # echo=True  # Uncomment to see SQL queries in logs
+    connect_args=connect_args
 )
 
 from typing import Generator

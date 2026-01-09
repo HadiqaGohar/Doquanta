@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     // The backend will validate the user ID against the session on its end
     const queryString = queryParams.toString();
     const cleanApiBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/$/, "");
-    const backendUrl = `${cleanApiBaseUrl}/api/${userId}/tasks${queryString ? `?${queryString}` : ''}`;
+    const backendUrl = `${cleanApiBaseUrl}/api/tasks${queryString ? `?${queryString}` : ''}`;
     console.log("GET - Backend URL:", backendUrl);
 
     // Extract Better Auth session token from cookies to use as Authorization header
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
     console.log("Request body:", body);
 
     const cleanApiBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/$/, "");
-    const backendUrl = `${cleanApiBaseUrl}/api/${userId}/tasks/`;
+    const backendUrl = `${cleanApiBaseUrl}/api/tasks/`;
     console.log("Backend URL:", backendUrl);
 
     // Extract Better Auth session token from cookies to use as Authorization header
@@ -166,9 +166,9 @@ export async function DELETE(request: NextRequest) {
     
     let backendUrl = "";
     if (pathname.endsWith('/all/clear')) {
-      backendUrl = `${cleanApiBaseUrl}/api/${userId}/tasks/all/clear`;
+      backendUrl = `${cleanApiBaseUrl}/api/tasks/all/clear`;
     } else if (pathname.endsWith('/completed/clear')) {
-      backendUrl = `${cleanApiBaseUrl}/api/${userId}/tasks/completed/clear`;
+      backendUrl = `${cleanApiBaseUrl}/api/tasks/completed/clear`;
     }
 
     if (!backendUrl) {

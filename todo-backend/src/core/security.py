@@ -1,7 +1,7 @@
 
 from typing import Optional
 from jose import jwt, JWTError
-from fastapi import HTTPException, Security, status
+from fastapi import HTTPException, Security, status, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlmodel import Session, text
 from src.db.session import engine
@@ -11,7 +11,7 @@ import traceback
 import base64
 
 
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 def verify_token(token: str) -> Optional[dict]:
     """Verify the JWT token and return the payload."""
@@ -46,34 +46,42 @@ def verify_session_token(token: str) -> Optional[str]:
             print(f"DEBUG: Token has signature, using raw token for DB lookup: {repr(db_token)}")
 
         with Session(engine) as session:
-            # Query the session table - Support both PostgreSQL (quoted camelCase) and SQLite (snake_case)
-            # Try with the actual column names in our database (Neon/Postgres use "userId" and "expiresAt")
+            # Query the session table
+            # Since we just recreated the tables with camelCase, prioritize that.
             
-            # 1. Try quoted camelCase (PostgreSQL standard for case-sensitive columns)
+            result = None
+            # 1. Try camelCase without quotes (SQLite standard)
             try:
-                statement = text('SELECT "userId", "expiresAt" FROM "session" WHERE "token" = :token')
+                statement = text("SELECT userId, expiresAt FROM session WHERE token = :token")
                 result = session.execute(statement, params={"token": db_token}).first()
             except Exception:
-                result = None
+                pass
 
-            # 2. Try snake_case (standard for some SQLAlchemy setups or SQLite)
+            # 2. Try camelCase with quotes (Postgres style)
+            if not result:
+                try:
+                    statement = text('SELECT "userId", "expiresAt" FROM "session" WHERE "token" = :token')
+                    result = session.execute(statement, params={"token": db_token}).first()
+                except Exception:
+                    pass
+
+            # 3. Try snake_case (fallback for old setups)
             if not result:
                 try:
                     statement = text("SELECT user_id, expires_at FROM session WHERE token = :token")
                     result = session.execute(statement, params={"token": db_token}).first()
                 except Exception:
-                    result = None
-
-            # 3. Try unquoted camelCase (SQLite is case-insensitive)
-            if not result:
-                try:
-                    statement = text("SELECT userId, expiresAt FROM session WHERE token = :token")
-                    result = session.execute(statement, params={"token": db_token}).first()
-                except Exception:
-                    result = None
+                    pass
 
             if result:
+                # IMPORTANT: In some SQLite versions, if we select a non-existent quoted identifier,
+                # it might return the identifier name as a string. Check for that.
                 user_id, expires_at = result
+                
+                if user_id == "userId" or expires_at == "expiresAt" or user_id == "user_id":
+                    print(f"DEBUG: SQLite returned literal column names instead of values. Token: {db_token}")
+                    return None
+
                 print(f"DEBUG: Found session in DB - user_id: {user_id}, expires_at: {expires_at}, type: {type(expires_at)}")
 
                 # Check expiration
@@ -111,9 +119,30 @@ def verify_session_token(token: str) -> Optional[str]:
         traceback.print_exc()
         return None
 
-def get_current_user_id(credentials: HTTPAuthorizationCredentials = Security(security)) -> str:
-    """Dependency to get the current user ID from the JWT token or DB session."""
-    token = credentials.credentials.strip() # Strip whitespace
+def get_current_user_id(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security)
+) -> str:
+    """Dependency to get the current user ID from the JWT token, DB session, or cookie."""
+    token = None
+    
+    # 1. Try Bearer token from header
+    if credentials:
+        token = credentials.credentials.strip()
+    
+    # 2. Try session cookie (better-auth.session_token)
+    if not token:
+        token = request.cookies.get("better-auth.session_token")
+        if token:
+            print(f"DEBUG: Found token in cookie: {token[:20]}...")
+
+    if not token:
+        print("DEBUG: No token found in header or cookie")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     # Try JWT verification first (for Better Auth JWT tokens)
     payload = verify_token(token)
