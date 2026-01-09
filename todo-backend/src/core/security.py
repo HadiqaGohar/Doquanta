@@ -34,89 +34,66 @@ def verify_token(token: str) -> Optional[dict]:
 def verify_session_token(token: str) -> Optional[str]:
     """Verify session token against the database."""
     try:
-        print(f"DEBUG: Received token for verification: {repr(token)}")
+        # print(f"DEBUG: Received token for verification: {repr(token)}")
 
-        # Handle signed tokens (format: token.signature)
-        # Better Auth might send signed cookies like "token.signature"
         db_token = token
         if "." in token and len(token.split(".")) >= 2:
-            # For Better Auth, the token is typically in format: token.signature
-            # We need to use ONLY the token part for verification against the DB
             db_token = token.split(".")[0]
-            print(f"DEBUG: Token has signature, using raw token for DB lookup: {repr(db_token)}")
 
         with Session(engine) as session:
-            # Query the session table
-            # Since we just recreated the tables with camelCase, prioritize that.
+            # Try multiple table and column name variations for maximum compatibility
+            is_postgres = "postgresql" in str(engine.url)
             
+            # Query variations to try
+            queries = []
+            if is_postgres:
+                queries = [
+                    text('SELECT "userId", "expiresAt" FROM "session" WHERE "token" = :token'),
+                    text('SELECT "user_id", "expires_at" FROM "session" WHERE "token" = :token'),
+                    text('SELECT userId, expiresAt FROM session WHERE token = :token'),
+                ]
+            else:
+                queries = [
+                    text("SELECT userId, expiresAt FROM session WHERE token = :token"),
+                    text("SELECT user_id, expires_at FROM session WHERE token = :token"),
+                ]
+
             result = None
-            # 1. Try camelCase without quotes (SQLite standard)
-            try:
-                statement = text("SELECT userId, expiresAt FROM session WHERE token = :token")
-                result = session.execute(statement, params={"token": db_token}).first()
-            except Exception:
-                pass
-
-            # 2. Try camelCase with quotes (Postgres style)
-            if not result:
+            for query in queries:
                 try:
-                    statement = text('SELECT "userId", "expiresAt" FROM "session" WHERE "token" = :token')
-                    result = session.execute(statement, params={"token": db_token}).first()
+                    result = session.execute(query, params={"token": db_token}).first()
+                    if result: break
                 except Exception:
-                    pass
-
-            # 3. Try snake_case (fallback for old setups)
-            if not result:
-                try:
-                    statement = text("SELECT user_id, expires_at FROM session WHERE token = :token")
-                    result = session.execute(statement, params={"token": db_token}).first()
-                except Exception:
-                    pass
+                    continue
 
             if result:
-                # IMPORTANT: In some SQLite versions, if we select a non-existent quoted identifier,
-                # it might return the identifier name as a string. Check for that.
                 user_id, expires_at = result
                 
-                if user_id == "userId" or expires_at == "expiresAt" or user_id == "user_id":
-                    print(f"DEBUG: SQLite returned literal column names instead of values. Token: {db_token}")
+                # Exclude literal column name returns (happens in some SQLite drivers)
+                if str(user_id).lower() in ["userid", "user_id"]:
                     return None
 
-                print(f"DEBUG: Found session in DB - user_id: {user_id}, expires_at: {expires_at}, type: {type(expires_at)}")
-
-                # Check expiration
-                # Ensure timezone awareness compatibility
+                # Expiration check
                 now = datetime.datetime.now(datetime.timezone.utc)
-
-                # Handle different types of datetime objects from different databases
                 if isinstance(expires_at, str):
-                    # Convert string to datetime object
                     from datetime import datetime as dt
-                    # Support multiple formats including those with ' ' or 'T'
                     try:
                         expires_at = dt.fromisoformat(expires_at.replace('Z', '+00:00'))
                     except ValueError:
-                        # Fallback for other formats
                         expires_at = dt.strptime(expires_at.split('.')[0], "%Y-%m-%d %H:%M:%S")
 
                 if expires_at.tzinfo is None:
-                    # If DB returns naive datetime, assume it's UTC or handle accordingly
-                    print(f"DEBUG: DB datetime is naive, treating as UTC. Converting now to naive for comparison")
                     now = now.replace(tzinfo=None)
 
                 if expires_at < now:
-                    print(f"DEBUG: Session token expired. Expires: {expires_at}, Now: {now}")
+                    print(f"DEBUG: Session expired for user: {user_id}")
                     return None
 
-                print(f"DEBUG: Session token verification successful for user: {user_id}")
                 return str(user_id)
-            else:
-                print(f"DEBUG: Session token not found in DB. Token sent: {repr(token)}, DB token tried: {repr(db_token)}")
-                return None
+            return None
 
     except Exception as e:
-        print(f"DEBUG: Database session verification failed: {e}")
-        traceback.print_exc()
+        print(f"DEBUG: Session verification error: {e}")
         return None
 
 def get_current_user_id(
