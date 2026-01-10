@@ -13,7 +13,7 @@ def verify_user_access(current_user_id: str = Depends(get_current_user_id)):
     """Get the authenticated user's ID."""
     return current_user_id
 
-@router.post("/", response_model=Task)
+@router.post("", response_model=Task)
 def create_task(
     *,
     task_data: dict,  # Receive as dict first to handle potential parsing issues
@@ -73,7 +73,7 @@ def create_task(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/", response_model=List[Task])
+@router.get("", response_model=List[Task])
 def list_tasks(
     *,
     completed: Optional[bool] = Query(None),
