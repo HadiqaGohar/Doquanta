@@ -604,7 +604,7 @@ class AIService:
             
             # Run the agent with the message
             result = await Runner.run(
-                agent=self.agent,
+                starting_agent=self.agent,
                 input=contextual_message,
                 run_config=self.config
             )
