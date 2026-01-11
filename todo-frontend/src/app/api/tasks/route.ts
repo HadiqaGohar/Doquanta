@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
     console.log("Request body:", body);
 
     const cleanApiBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/$/, "");
-    const backendUrl = `${cleanApiBaseUrl}/api/tasks/`;
+    const backendUrl = `${cleanApiBaseUrl}/api/tasks`;
     console.log("Backend URL:", backendUrl);
 
     // Extract Better Auth session token from cookies to use as Authorization header
