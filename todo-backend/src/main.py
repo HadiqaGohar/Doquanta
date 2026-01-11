@@ -346,12 +346,12 @@ class AIService:
         
         # Define tools for the agent
         self.tools = [
-            self.get_tasks_tool(),
-            self.create_task_tool(),
-            self.update_task_tool(),
-            self.delete_task_tool(),
-            self.get_reminders_tool(),
-            self.get_current_datetime_tool()
+            self.get_tasks_tool,
+            self.create_task_tool,
+            self.update_task_tool,
+            self.delete_task_tool,
+            self.get_reminders_tool,
+            self.get_current_datetime_tool
         ]
         
         # Main agent with instructions and tools
