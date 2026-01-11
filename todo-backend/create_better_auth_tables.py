@@ -53,14 +53,9 @@ def create_better_auth_tables():
             logger.info("jwks table created or already exists.")
 
             # Verify that the jwks table was created
-            result = conn.execute(text("""
-                SELECT EXISTS (
-                    SELECT FROM information_schema.tables
-                    WHERE table_schema = 'public'
-                    AND table_name = 'jwks'
-                );
-            """))
-            jwks_exists = result.fetchone()[0]
+            from sqlalchemy import inspect
+            inspector = inspect(engine)
+            jwks_exists = inspector.has_table("jwks")
 
             if jwks_exists:
                 logger.info("✓ jwks table successfully created!")

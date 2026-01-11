@@ -1,10 +1,9 @@
 import asyncio
-from sqlmodel import create_engine, Session, text
+from sqlalchemy import create_engine, text, inspect
+from sqlmodel import Session, SQLModel
 from src.core.settings import settings
-from src.models.models import Task  # Import the Task model from the correct location
-from src.db.session import engine  # Import the engine from session module if available
+from src.models.models import Task, User # Import models
 import logging
-
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -14,33 +13,26 @@ def migrate():
     """
     Perform database migrations for the Todo application.
     This script handles schema changes for production-like environments.
+    Compatible with SQLite and PostgreSQL.
     """
     try:
         # Use the engine from settings
         engine = create_engine(settings.database_url)
-
         logger.info("Starting database migration...")
+        
+        inspector = inspect(engine)
 
         with Session(engine) as session:
             # Create all tables defined in the models
-            from src.models.models import Task, User  # Ensure the models are loaded from correct location
-            from sqlmodel import SQLModel
             SQLModel.metadata.create_all(engine)
 
             # Check if the users table exists
-            user_result = session.exec(text("""
-                SELECT EXISTS (
-                    SELECT FROM information_schema.tables
-                    WHERE table_schema = 'public'
-                    AND table_name = 'user'
-                );
-            """))
-
-            user_exists_row = user_result.first()
-            user_table_exists = user_exists_row[0] if user_exists_row else False
-
-            if not user_table_exists:
+            if not inspector.has_table("user"):
                 logger.info("Creating users table...")
+                # Note: SQLModel.metadata.create_all should have created it, but keeping manual fallback just in case
+                # Adjust for SQLite/Postgres differences if needed, but SQLModel is preferred.
+                # Assuming SQLModel worked, this block might not be reached.
+                # If we really need manual SQL for some reason:
                 session.exec(text("""
                     CREATE TABLE "user" (
                         id VARCHAR PRIMARY KEY,
@@ -54,36 +46,30 @@ def migrate():
                 logger.info("Users table already exists.")
 
             # Check if the tasks table exists
-            task_result = session.exec(text("""
-                SELECT EXISTS (
-                    SELECT FROM information_schema.tables
-                    WHERE table_schema = 'public'
-                    AND table_name = 'task'
-                );
-            """))
-
-            task_exists_row = task_result.first()
-            task_table_exists = task_exists_row[0] if task_exists_row else False
-
-            if not task_table_exists:
+            if not inspector.has_table("task"):
                 logger.info("Creating tasks table...")
-                session.exec(text("""
+                # Similarly, relying on SQLModel or fallback
+                # Note: SERIAL is Postgres only. SQLite uses INTEGER PRIMARY KEY AUTOINCREMENT
+                is_postgres = "postgresql" in settings.database_url
+                id_type = "SERIAL PRIMARY KEY" if is_postgres else "INTEGER PRIMARY KEY AUTOINCREMENT"
+                
+                session.exec(text(f"""
                     CREATE TABLE task (
-                        id SERIAL PRIMARY KEY,
+                        id {id_type},
                         user_id VARCHAR NOT NULL REFERENCES "user"(id),
                         title VARCHAR NOT NULL,
                         description TEXT,
-                        completed BOOLEAN DEFAULT FALSE,
+                        completed BOOLEAN DEFAULT 0,
                         priority VARCHAR(20) DEFAULT 'medium',
                         category VARCHAR(50) DEFAULT 'other',
-                        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                        due_date TIMESTAMP WITH TIME ZONE,
-                        reminder_time TIMESTAMP WITH TIME ZONE,
-                        is_recurring BOOLEAN DEFAULT FALSE,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        due_date TIMESTAMP,
+                        reminder_time TIMESTAMP,
+                        is_recurring BOOLEAN DEFAULT 0,
                         recurrence_pattern VARCHAR(50),
                         recurrence_interval INTEGER,
-                        recurrence_end_date TIMESTAMP WITH TIME ZONE,
+                        recurrence_end_date TIMESTAMP,
                         max_occurrences INTEGER
                     );
                 """))
@@ -92,31 +78,35 @@ def migrate():
             else:
                 logger.info("Tasks table already exists, checking for missing columns...")
 
+                existing_columns = [col['name'] for col in inspector.get_columns("task")]
+                
                 # Check and add missing columns if needed
                 columns_to_add = [
-                    ("due_date", "TIMESTAMP WITH TIME ZONE"),
+                    ("due_date", "TIMESTAMP WITH TIME ZONE"), # SQLite: DATETIME
                     ("reminder_time", "TIMESTAMP WITH TIME ZONE"),
-                    ("is_recurring", "BOOLEAN DEFAULT FALSE"),
+                    ("is_recurring", "BOOLEAN DEFAULT FALSE"), # SQLite: 0/1
                     ("recurrence_pattern", "VARCHAR(50)"),
                     ("recurrence_interval", "INTEGER"),
                     ("recurrence_end_date", "TIMESTAMP WITH TIME ZONE"),
                     ("max_occurrences", "INTEGER"),
-                    ("updated_at", "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP")  # Add updated_at column if missing
+                    ("updated_at", "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP")
                 ]
+                
+                is_sqlite = "sqlite" in settings.database_url
 
                 for col_name, col_type in columns_to_add:
                     try:
-                        # Check if column exists
-                        col_result = session.exec(text(f"""
-                            SELECT column_name
-                            FROM information_schema.columns
-                            WHERE table_name = 'task' AND column_name = '{col_name}';
-                        """))
-
-                        col_exists_row = col_result.first()
-                        if not col_exists_row:
+                        if col_name not in existing_columns:
                             logger.info(f"Adding {col_name} column...")
-                            session.exec(text(f"ALTER TABLE task ADD COLUMN {col_name} {col_type};"))
+                            
+                            final_type = col_type
+                            if is_sqlite:
+                                if "BOOLEAN" in col_type:
+                                    final_type = "BOOLEAN DEFAULT 0"
+                                elif "TIMESTAMP" in col_type:
+                                    final_type = "DATETIME"
+
+                            session.exec(text(f"ALTER TABLE task ADD COLUMN {col_name} {final_type};"))
                             logger.info(f"{col_name} column added successfully.")
                         else:
                             logger.info(f"{col_name} column already exists.")
