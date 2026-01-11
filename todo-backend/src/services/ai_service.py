@@ -23,7 +23,10 @@ class AIService:
             base_url=os.getenv("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai/"),
         )
         self.model = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
-        self.fallback_model = "gemini-1.5-flash"
+        # Fallback to a different model family/size to avoid hitting the same rate limit or issue
+        self.fallback_model = "gemini-1.5-pro" 
+        
+        logger.info(f"AIService initialized with model={self.model}, fallback={self.fallback_model}")
 
     # --- Tool Implementations ---
 

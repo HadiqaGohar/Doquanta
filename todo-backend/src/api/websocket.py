@@ -337,7 +337,7 @@ async def handle_websocket_message(websocket: WebSocket, user_id: str, data: str
                 )
 
                 # Use the gemini model
-                model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+                model_name = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
 
                 # Generate response
                 response = client.chat.completions.create(
