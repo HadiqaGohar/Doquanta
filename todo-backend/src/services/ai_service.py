@@ -7,7 +7,7 @@ from sqlmodel import Session, select
 from src.models.models import Task
 from src.db.session import engine
 from src.services.date_time_parser import date_time_parser_service
-from openai import AsyncOpenAI
+from openai import AsyncOpenAI, RateLimitError, APIError
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -23,6 +23,7 @@ class AIService:
             base_url=os.getenv("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai/"),
         )
         self.model = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+        self.fallback_model = "gemini-1.5-flash"
 
     # --- Tool Implementations ---
 
@@ -158,6 +159,29 @@ class AIService:
 
     # --- Main Logic ---
 
+    async def _call_llm(self, messages, tools=None, tool_choice=None, model=None):
+        """Internal helper to call LLM with error handling."""
+        use_model = model or self.model
+        try:
+            return await self.client.chat.completions.create(
+                model=use_model,
+                messages=messages,
+                tools=tools,
+                tool_choice=tool_choice
+            )
+        except (RateLimitError, APIError) as e:
+            # If we hit a rate limit or API error with the primary model, and it's not the fallback
+            if "429" in str(e) or isinstance(e, RateLimitError):
+                logger.warning(f"Rate limit hit for model {use_model}. Switching to fallback: {self.fallback_model}")
+                if use_model != self.fallback_model:
+                    return await self.client.chat.completions.create(
+                        model=self.fallback_model,
+                        messages=messages,
+                        tools=tools,
+                        tool_choice=tool_choice
+                    )
+            raise e
+
     async def process_message(self, user_id: str, message: str) -> str:
         """
         Process a user message, execute tools if needed, and return the AI response.
@@ -169,15 +193,10 @@ class AIService:
 
         # First API call to determine tool usage
         try:
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                tools=self.tools,
-                tool_choice="auto"
-            )
+            response = await self._call_llm(messages, tools=self.tools, tool_choice="auto")
         except Exception as e:
             logger.error(f"AI API Error: {e}")
-            return "I'm having trouble connecting to my brain right now. Please try again."
+            return "I'm currently overloaded with requests (Rate Limit Exceeded). Please try again in a minute."
 
         response_message = response.choices[0].message
         tool_calls = response_message.tool_calls
@@ -215,11 +234,12 @@ class AIService:
                 })
 
             # Second API call to generate final response
-            second_response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=messages
-            )
-            return second_response.choices[0].message.content
+            try:
+                second_response = await self._call_llm(messages)
+                return second_response.choices[0].message.content
+            except Exception as e:
+                logger.error(f"AI API Error (Second Call): {e}")
+                return "I processed your task, but I'm having trouble generating a confirmation message right now due to heavy traffic."
         
         else:
             return response_message.content
