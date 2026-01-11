@@ -48,7 +48,16 @@ app.add_middleware(
 @app.on_event("startup")
 def on_startup():
     """Create database tables on startup."""
-    SQLModel.metadata.create_all(engine)
+    print(f"DEBUG: Backend starting up with DATABASE_URL: {settings.database_url}")
+    try:
+        # 1. Create tables if they don't exist
+        SQLModel.metadata.create_all(engine)
+        
+        # 2. Run migrations to ensure all columns exist (important for production)
+        from production_migration import run_migrations
+        run_migrations()
+    except Exception as e:
+        print(f"Error creating database tables or running migrations: {e}")
 
 # --- Task Manager and Storage ---
 
