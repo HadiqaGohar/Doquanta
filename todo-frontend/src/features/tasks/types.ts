@@ -14,6 +14,7 @@ export interface Task {
   category: TaskCategory;
   created_at: string;
   updated_at: string;
+  completed_at?: string | null; // Optional timestamp when task was completed
   due_date?: string | null;
   reminder_time?: string | null;
   is_recurring: boolean;

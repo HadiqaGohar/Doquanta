@@ -257,14 +257,15 @@ async def call_tool(tool_name: str, arguments: Dict[str, Any]) -> List[TextConte
                     if not db_task or db_task.user_id != user_id:
                         result = {"error": "Task not found or unauthorized"}
                     else:
+                        task_title = db_task.title
                         session.delete(db_task)
                         session.commit()
 
                         result = {
                             "task_id": task_id,
                             "status": "deleted",
-                            "title": db_task.title,
-                            "message": f"Task '{db_task.title}' has been deleted successfully!"
+                            "title": task_title,
+                            "message": f"Task '{task_title}' has been deleted successfully!"
                         }
 
             elif tool_name == "update_task":

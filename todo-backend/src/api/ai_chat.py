@@ -158,13 +158,13 @@ async def chat_with_ai(
                 The current user ID is {current_user_id}.
                 Always use the user ID {current_user_id} when calling tools.
                 Be helpful, friendly, and provide clear responses to the user.
-                If the user wants to perform task operations, use the appropriate tools.
-                If the user asks general questions, provide helpful responses without using tools.
-
-                When adding tasks, try to determine an appropriate category from these options:
-                work, personal, health, finance, education, shopping, home, travel, entertainment, meeting, appointment, reminder, other.
-                If the user doesn't specify a category, use the content of the task to suggest one.
-                For due dates and reminders, accept natural language like 'tomorrow', 'next Monday', 'in 2 hours', etc.
+                
+                IMPORTANT:
+                1. Before completing, updating, or deleting a task, you MUST have the 'task_id'.
+                2. If the user refers to a task by name but you don't know its ID, use 'list_tasks' first to find the ID.
+                3. If 'list_tasks' returns multiple similar tasks, ask for clarification.
+                4. When adding tasks, try to determine an appropriate category.
+                5. For due dates and reminders, accept natural language like 'tomorrow', 'next Monday', etc.
                 """
             },
             {
@@ -175,7 +175,7 @@ async def chat_with_ai(
 
         # Call the OpenAI API with tools
         response = await openai_client.chat.completions.create(
-            model=os.getenv("OPENAI_MODEL", "gpt-4-turbo"),
+            model="gemini-3-flash-preview",
             messages=messages,
             tools=tools,
             tool_choice="auto"
@@ -190,6 +190,9 @@ async def chat_with_ai(
         response_content = message.content or "I processed your request successfully."
 
         if message.tool_calls:
+            # First, add the assistant's tool call message to the conversation history
+            messages.append(message)
+            
             # Execute each tool call via the MCP integration service
             for tool_call in message.tool_calls:
                 tool_name = tool_call.function.name
@@ -203,8 +206,16 @@ async def chat_with_ai(
                 try:
                     tool_result = await MCPTodoService.execute_tool(tool_name, arguments)
 
-                    # Format the tool result for the response
-                    tool_result_formatted = {
+                    # Add the tool result to messages
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
+                        "name": tool_name,
+                        "content": json.dumps(tool_result)
+                    })
+
+                    # Format for internal tracking in ChatResponse
+                    processed_tool_calls.append({
                         "id": tool_call.id,
                         "type": tool_call.type,
                         "function": {
@@ -212,14 +223,20 @@ async def chat_with_ai(
                             "arguments": json.dumps(arguments),
                             "result": tool_result
                         }
-                    }
-                    processed_tool_calls.append(tool_result_formatted)
+                    })
 
-                    # Log successful tool execution
                     logger.info(f"Successfully executed tool {tool_name} for user {current_user_id}")
                 except Exception as e:
                     logger.error(f"Error executing tool {tool_name} for user {current_user_id}: {str(e)}", exc_info=True)
-                    tool_result_formatted = {
+                    
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
+                        "name": tool_name,
+                        "content": json.dumps({"error": str(e)})
+                    })
+                    
+                    processed_tool_calls.append({
                         "id": tool_call.id,
                         "type": tool_call.type,
                         "function": {
@@ -227,56 +244,15 @@ async def chat_with_ai(
                             "arguments": json.dumps(arguments),
                             "error": f"Failed to execute tool: {str(e)}"
                         }
-                    }
-                    processed_tool_calls.append(tool_result_formatted)
-
-            # Now call the AI again with the tool results to get a final response
-            if processed_tool_calls:
-                # Create a follow-up request with tool results
-                follow_up_messages = [
-                    {
-                        "role": "system",
-                        "content": f"""
-                        You are an AI assistant that helps users manage their tasks.
-                        The tools you requested have been executed. Here are the results:
-                        """
-                    },
-                    {
-                        "role": "user",
-                        "content": request.message
-                    }
-                ]
-
-                # Add tool results as assistant messages
-                for tool_call in message.tool_calls:
-                    tool_name = tool_call.function.name
-                    arguments = json.loads(tool_call.function.arguments)
-
-                    if "user_id" not in arguments:
-                        arguments["user_id"] = current_user_id
-
-                    # Add the tool call and result to the conversation
-                    follow_up_messages.append({
-                        "role": "assistant",
-                        "content": f"Called tool '{tool_name}' with arguments: {json.dumps(arguments)}"
                     })
 
-                # Add the tool results
-                for processed_tool_call in processed_tool_calls:
-                    tool_result = processed_tool_call["function"].get("result") or processed_tool_call["function"].get("error")
-                    follow_up_messages.append({
-                        "role": "function",
-                        "name": processed_tool_call["function"]["name"],
-                        "content": json.dumps(tool_result)
-                    })
+            # Get final response from AI with tool results
+            final_response = await openai_client.chat.completions.create(
+                model="gemini-3-flash-preview",
+                messages=messages
+            )
 
-                # Get final response from AI with tool results
-                final_response = await openai_client.chat.completions.create(
-                    model=os.getenv("OPENAI_MODEL", "gpt-4-turbo"),
-                    messages=follow_up_messages
-                )
-
-                response_content = final_response.choices[0].message.content or "I processed your request successfully."
+            response_content = final_response.choices[0].message.content or "I processed your request successfully."
 
         return ChatResponse(
             response=response_content,

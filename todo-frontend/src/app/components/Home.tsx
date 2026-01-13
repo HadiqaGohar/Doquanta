@@ -98,10 +98,10 @@ const anton = { className: "font-anton" };
               <p
                 className={`${anton.className} text-[#E0E0E0] text-5xl md:text-6xl`}
               >
-                7k+
+                10k+
               </p>
               <p className="text-[#a2a5ae] text-lg md:text-xl font-light mt-2">
-                LinkedIn Followers
+              Active Users              
               </p>
             </div>
 
@@ -110,11 +110,11 @@ const anton = { className: "font-anton" };
               <p
                 className={`${anton.className} text-[#E0E0E0] text-5xl md:text-6xl`}
               >
-                50+
+                1M+
               </p>{" "}
               {/* Replace 20 with your actual project count */}
               <p className="text-[#a2a5ae] text-lg md:text-xl font-light mt-2">
-                Projects Complete
+              Tasks Completed
               </p>
             </div>
 
@@ -123,10 +123,10 @@ const anton = { className: "font-anton" };
               <p
                 className={`${anton.className} text-[#E0E0E0] text-5xl md:text-6xl`}
               >
-                95%
+                98%
               </p>
               <p className="text-[#a2a5ae] text-lg md:text-xl font-light mt-2">
-                Satisfaction Rate
+              User Satisfaction
               </p>
             </div>
 
@@ -135,10 +135,10 @@ const anton = { className: "font-anton" };
               <p
                 className={`${anton.className} text-[#E0E0E0] text-5xl md:text-6xl`}
               >
-                10+
+                2.5x
               </p>
               <p className="text-[#a2a5ae] text-lg md:text-xl font-light mt-2">
-                Technologies Mastered
+              Productivity Boost
               </p>
             </div>
           </div>

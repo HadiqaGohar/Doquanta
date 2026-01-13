@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Send, X, MessageCircle, Mic, Paperclip, Maximize, Minimize, Menu, Plus, Moon, Sun } from 'lucide-react';
+import { Send, X, MessageCircle, Mic, Paperclip, Maximize, Minimize, Menu, Plus, Moon, Sun, Sparkles, Bot, User, Copy, Edit3, Volume2, VolumeX } from 'lucide-react';
 import { useUser } from '@/features/auth/hooks';
 import TaskPanel from './TaskPanel';
 import { useTheme } from '@/contexts/ThemeContext';
+import ChatWelcomeScreen from './ChatWelcomeScreen';
+import ChatNotification from './ChatNotification';
 
 interface Message {
   id: string;
@@ -45,7 +47,7 @@ export default function ChatInterface({ isOpen, onClose }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      content: 'Hello! I\'m your DoQuanta AI assistant. How can I help you today?',
+      content: 'Hello! I\'m your DoQuanta AI assistant. How can I help you today? ✨',
       sender: 'ai',
       timestamp: new Date(),
     }
@@ -53,11 +55,18 @@ export default function ChatInterface({ isOpen, onClose }: ChatInterfaceProps) {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [isCompact, setIsCompact] = useState(true); // New state for compact mode
-  // Removed sidebar functionality and chat history since we're making a compact interface
+  const [isCompact, setIsCompact] = useState(true);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [isTyping, setIsTyping] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [notification, setNotification] = useState<{
+    type: 'success' | 'error' | 'warning' | 'info';
+    message: string;
+    isVisible: boolean;
+  }>({ type: 'info', message: '', isVisible: false });
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const { user } = useUser();
   const { theme, toggleTheme } = useTheme();
 
@@ -68,6 +77,35 @@ export default function ChatInterface({ isOpen, onClose }: ChatInterfaceProps) {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Auto-focus input when chat opens
+  useEffect(() => {
+    if (isOpen && inputRef.current) {
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [isOpen]);
+
+  // Play notification sound
+  const playNotificationSound = () => {
+    if (soundEnabled) {
+      // Create a simple beep sound
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 800;
+      oscillator.type = 'sine';
+      
+      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.1);
+    }
+  };
 
   // Task management functions
   const handleTaskAction = (taskId: number, action: 'complete' | 'edit' | 'delete', updatedTask?: Partial<Task>) => {
@@ -192,8 +230,12 @@ export default function ChatInterface({ isOpen, onClose }: ChatInterfaceProps) {
     setMessages(prev => [...prev, userMessage]);
     setInputValue('');
     setIsLoading(true);
+    setIsTyping(true);
 
     try {
+      // Simulate typing delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
       // API call to backend via Next.js API route
       const response = await fetch('/api/chat/ask-ai', {
         method: 'POST',
@@ -202,7 +244,6 @@ export default function ChatInterface({ isOpen, onClose }: ChatInterfaceProps) {
         },
         body: JSON.stringify({
           message: inputValue,
-          // Removed session_id since we're not using chat history
         }),
       });
 
@@ -282,6 +323,8 @@ export default function ChatInterface({ isOpen, onClose }: ChatInterfaceProps) {
           timestamp: new Date(),
         };
         setMessages(prev => [...prev, aiMessage]);
+        playNotificationSound();
+        showNotification('success', 'Message sent successfully!');
       } else {
         const errorData = await response.json();
         const aiMessage: Message = {
@@ -291,6 +334,7 @@ export default function ChatInterface({ isOpen, onClose }: ChatInterfaceProps) {
           timestamp: new Date(),
         };
         setMessages(prev => [...prev, aiMessage]);
+        showNotification('error', 'Failed to send message. Please try again.');
       }
     } catch (error) {
       console.error('Error sending message:', error);
@@ -301,15 +345,16 @@ export default function ChatInterface({ isOpen, onClose }: ChatInterfaceProps) {
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, aiMessage]);
+      showNotification('error', 'Connection error. Please check your internet.');
     } finally {
       setIsLoading(false);
-      // Removed saving chat history since we're not using chat sessions
+      setIsTyping(false);
     }
   };
 
   const handleVoiceInput = () => {
     // In a real app, this would start speech recognition
-    alert('Voice input would start here. This is a placeholder for speech recognition functionality.');
+    showNotification('info', 'Voice input feature coming soon!');
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -317,6 +362,7 @@ export default function ChatInterface({ isOpen, onClose }: ChatInterfaceProps) {
     if (file) {
       // In a real app, this would process the file
       setInputValue(`Uploaded file: ${file.name}`);
+      showNotification('success', `File "${file.name}" attached successfully!`);
     }
   };
 
@@ -328,157 +374,232 @@ export default function ChatInterface({ isOpen, onClose }: ChatInterfaceProps) {
     setIsCompact(!isCompact);
   };
 
+  const copyMessage = (content: string) => {
+    navigator.clipboard.writeText(content);
+    setNotification({
+      type: 'success',
+      message: 'Message copied to clipboard!',
+      isVisible: true
+    });
+  };
+
+  const showNotification = (type: 'success' | 'error' | 'warning' | 'info', message: string) => {
+    setNotification({ type, message, isVisible: true });
+  };
 
   if (!isOpen) return null;
 
   return (
-    <div className={`fixed ${isFullScreen ? 'top-0 left-0' : 'bottom-4 right-4'} ${isFullScreen ? 'w-screen h-screen max-w-none rounded-none' : isCompact ? 'w-full max-w-xs h-[50vh]' : 'w-full max-w-lg h-[70vh]'} bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 flex z-50 overflow-hidden flex-col`}>
-      {/* Main Chat Area - No sidebar for compact view */}
-      <div className="flex-1 flex flex-col min-h-0">
-        {/* Chat Header */}
-        <div className={`${isFullScreen ? 'rounded-none' : 'rounded-t-xl md:rounded-none'} bg-gradient-to-r from-[#aade81] to-[#8bc34a] text-white p-3 md:p-4 flex items-center justify-between shrink-0`}>
-          <div className="flex items-center gap-2">
-            <MessageCircle className="h-5 w-5" />
-            <h3 className="font-bold text-sm md:text-base">DoQuanta AI Assistant</h3>
+    <div className={`fixed ${isFullScreen ? 'inset-0' : 'bottom-20 right-6'} ${
+      isFullScreen 
+        ? 'w-screen h-screen max-w-none rounded-none' 
+        : isCompact 
+          ? 'w-96 h-[32rem]' 
+          : 'w-[28rem] h-[36rem]'
+    } glass-morphism rounded-2xl shadow-2xl flex z-50 overflow-hidden flex-col transition-all duration-500 ease-out animate-scale-in`}>
+      
+      {/* Animated Background Gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 via-teal-50/30 to-cyan-50/50 dark:from-emerald-950/20 dark:via-teal-950/10 dark:to-cyan-950/20 animate-gradient-shift"></div>
+      
+      {/* Main Chat Area */}
+      <div className="relative flex-1 flex flex-col min-h-0">
+        {/* Enhanced Chat Header */}
+        <div className={`${isFullScreen ? 'rounded-none' : 'rounded-t-2xl'} bg-gradient-to-r from-emerald-500 via-teal-600 to-cyan-600 text-white p-4 flex items-center justify-between shrink-0 shadow-lg animate-gradient-shift`}>
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                <Bot className="h-5 w-5" />
+              </div>
+              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white shadow-sm">
+                <div className="w-2 h-2 bg-green-600 rounded-full animate-pulse mx-auto mt-0.5"></div>
+              </div>
+            </div>
+            <div>
+              <h3 className="font-bold text-lg">DoQuanta AI</h3>
+              <p className="text-xs text-white/80">
+                {isTyping ? (
+                  <span className="flex items-center gap-1">
+                    <span>Typing</span>
+                    <div className="typing-indicator">
+                      <div className="w-1 h-1 bg-white/60 rounded-full animate-typing-dots"></div>
+                      <div className="w-1 h-1 bg-white/60 rounded-full animate-typing-dots" style={{ animationDelay: '0.2s' }}></div>
+                      <div className="w-1 h-1 bg-white/60 rounded-full animate-typing-dots" style={{ animationDelay: '0.4s' }}></div>
+                    </div>
+                  </span>
+                ) : 'Online • Ready to help'}
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
-            {/* <button
-              onClick={toggleCompact}
-              className="p-1 rounded-full hover:bg-white/20 transition-colors"
-              aria-label={isCompact ? "Expand chat" : "Compact chat"}
+            <button
+              onClick={() => setSoundEnabled(!soundEnabled)}
+              className="p-2 rounded-full hover:bg-white/20 transition-all duration-200 hover-lift"
+              aria-label={soundEnabled ? "Disable sound" : "Enable sound"}
             >
-              {isCompact ? <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M8 3v3a2 2 0 0 1-2 2H3"></path>
-                <path d="M21 8h-3a2 2 0 0 1-2-2V3"></path>
-                <path d="M21 16h-3a2 2 0 0 1-2 2v3"></path>
-                <path d="M8 21v-3a2 2 0 0 1 2-2h3"></path>
-              </svg> : <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"></path>
-                <path d="m3 9 2.45-4.9A2 2 0 0 1 7.24 3h9.52a2 2 0 0 1 1.8 1.1L21 9"></path>
-                <path d="M12 3v6"></path>
-              </svg>}
-            </button> */}
-            {/* <button
-              onClick={toggleTheme}
-              className="p-1 rounded-full hover:bg-white/20 transition-colors"
-              aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-            >
-              {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </button> */}
+              {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+            </button>
             <button
               onClick={toggleFullScreen}
-              className="p-1 rounded-full hover:bg-white/20 transition-colors"
+              className="p-2 rounded-full hover:bg-white/20 transition-all duration-200 hover-lift"
               aria-label={isFullScreen ? "Exit full screen" : "Enter full screen"}
             >
-              
-              {isFullScreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
+              {isFullScreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
             </button>
             <button
               onClick={onClose}
-              className="p-1 rounded-full hover:bg-white/20 transition-colors"
+              className="p-2 rounded-full hover:bg-white/20 transition-all duration-200 hover-lift"
               aria-label="Close chat"
             >
-              <X className="h-5 w-5" />
+              <X className="h-4 w-4" />
             </button>
           </div>
         </div>
 
-        {/* Messages Container */}
-        <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4 bg-gray-50 dark:bg-gray-700">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'} relative group`}
-            >
-              <div
-                className={`max-w-[85%] rounded-2xl px-3 py-2 md:px-4 md:py-3 relative ${
-                  message.sender === 'user'
-                    ? 'bg-[#aade81] text-white rounded-br-none'
-                    : 'bg-white dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-bl-none border border-gray-200 dark:border-gray-600 shadow-sm'
-                }`}
-              >
-                <div className="whitespace-pre-wrap text-sm md:text-base">{message.content}</div>
-                <div className={`text-xs mt-1 ${message.sender === 'user' ? 'text-[#e6f7e0]' : 'text-gray-500 dark:text-gray-400'}`}>
-                  {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </div>
-                {/* Action buttons that appear on hover */}
-                <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
-                  <button
-                    onClick={() => navigator.clipboard.writeText(message.content)}
-                    className="p-1 rounded hover:bg-black/10 dark:hover:bg-gray-500"
-                    aria-label="Copy message"
+        {/* Enhanced Messages Container */}
+        <div className="flex-1 overflow-y-auto bg-gradient-to-b from-transparent to-gray-50/50 dark:to-gray-800/50">
+          {messages.length <= 1 ? (
+            // Show welcome screen when only the initial AI greeting exists
+            <ChatWelcomeScreen onQuickAction={(action) => setInputValue(action)} />
+          ) : (
+            // Show messages when conversation has started
+            <div className="p-4 space-y-4">
+              {messages.map((message, index) => (
+                <div
+                  key={message.id}
+                  className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'} relative group message-bubble-enter`}
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
+                  <div
+                    className={`max-w-[85%] rounded-2xl px-4 py-3 relative transition-all duration-200 hover-lift ${
+                      message.sender === 'user'
+                        ? 'message-bubble-user text-white rounded-br-md shadow-md'
+                        : 'message-bubble-ai text-gray-800 dark:text-gray-200 rounded-bl-md shadow-md'
+                    }`}
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
-                      <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => setInputValue(message.content)}
-                    className="p-1 rounded hover:bg-black/10 dark:hover:bg-gray-500"
-                    aria-label="Edit message"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-          {isLoading && (
-            <div className="flex justify-start">
-              <div className="bg-white dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-2xl rounded-bl-none px-3 py-2 md:px-4 md:py-3 border border-gray-200 dark:border-gray-600 shadow-sm">
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm">Thinking...</span>
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-gray-400 dark:bg-gray-300 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 dark:bg-gray-300 rounded-full animate-bounce delay-100"></div>
-                    <div className="w-2 h-2 bg-gray-400 dark:bg-gray-300 rounded-full animate-bounce delay-200"></div>
+                    {/* Message Avatar */}
+                    <div className={`absolute -top-2 ${message.sender === 'user' ? '-right-2' : '-left-2'} w-6 h-6 rounded-full flex items-center justify-center text-xs animate-float ${
+                      message.sender === 'user' 
+                        ? 'bg-emerald-600 text-white' 
+                        : 'bg-gradient-to-br from-purple-500 to-pink-500 text-white animate-gradient-shift'
+                    }`}>
+                      {message.sender === 'user' ? <User className="w-3 h-3" /> : <Bot className="w-3 h-3" />}
+                    </div>
+
+                    <div className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</div>
+                    <div className={`text-xs mt-2 flex items-center justify-between ${
+                      message.sender === 'user' ? 'text-emerald-100' : 'text-gray-500 dark:text-gray-400'
+                    }`}>
+                      <span>{message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      
+                      {/* Action buttons that appear on hover */}
+                      <div className="opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity duration-200">
+                        <button
+                          onClick={() => copyMessage(message.content)}
+                          className="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors hover-lift"
+                          aria-label="Copy message"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={() => setInputValue(message.content)}
+                          className="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors hover-lift"
+                          aria-label="Edit message"
+                        >
+                          <Edit3 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ))}
+              
+              {/* Enhanced Loading Animation */}
+              {isLoading && (
+                <div className="flex justify-start animate-slide-in-bottom">
+                  <div className="message-bubble-ai text-gray-800 dark:text-gray-200 rounded-2xl rounded-bl-md px-4 py-3 shadow-md">
+                    <div className="flex items-center space-x-3">
+                      <div className="typing-indicator">
+                        <div className="typing-dot"></div>
+                        <div className="typing-dot"></div>
+                        <div className="typing-dot"></div>
+                      </div>
+                      <span className="text-sm text-gray-600 dark:text-gray-300">AI is thinking...</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
             </div>
           )}
-          <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Area */}
-        <form onSubmit={handleSend} className="border-t border-gray-200 dark:border-gray-600 p-3 md:p-4 bg-white dark:bg-gray-800 shrink-0">
-          <div className="flex flex-col sm:flex-row gap-2">
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              placeholder="Type a task or ask something…"
-              className="flex-1 border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#aade81] focus:border-transparent shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              disabled={isLoading}
-            />
+        {/* Enhanced Input Area */}
+        <div className="border-t border-gray-200/50 dark:border-gray-700/50 p-4 glass-morphism shrink-0">
+          <form onSubmit={handleSend} className="space-y-3">
             <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={handleVoiceInput}
-                className="p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-300 dark:border-gray-600 shrink-0"
-                aria-label="Voice input"
-              >
-                <Mic className="h-4 w-4" />
-              </button>
-              <button
-                type="submit"
-                disabled={!inputValue.trim() || isLoading}
-                className="bg-[#aade81] text-gray-900 rounded-xl p-3 hover:bg-[#8bc34a] disabled:opacity-50 transition-colors shadow-sm shrink-0"
-                aria-label="Send message"
-              >
-                <Send className="h-4 w-4" />
-              </button>
+              <div className="flex-1 relative">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  placeholder="Type your message..."
+                  className="w-full border border-gray-300/50 dark:border-gray-600/50 rounded-xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 shadow-sm glass-morphism text-gray-900 dark:text-gray-100 transition-all duration-200 hover-lift"
+                  disabled={isLoading}
+                />
+                {/* Character count or typing indicator */}
+                {inputValue && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-400 animate-fade-in">
+                    {inputValue.length}
+                  </div>
+                )}
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleVoiceInput}
+                  className="p-3 rounded-xl hover:bg-gray-100/80 dark:hover:bg-gray-700/80 transition-all duration-200 border border-gray-300/50 dark:border-gray-600/50 shrink-0 glass-morphism hover-lift"
+                  aria-label="Voice input"
+                >
+                  <Mic className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-3 rounded-xl hover:bg-gray-100/80 dark:hover:bg-gray-700/80 transition-all duration-200 border border-gray-300/50 dark:border-gray-600/50 shrink-0 glass-morphism hover-lift"
+                  aria-label="Attach file"
+                >
+                  <Paperclip className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+                </button>
+                <button
+                  type="submit"
+                  disabled={!inputValue.trim() || isLoading}
+                  className="button-primary text-white rounded-xl p-3 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shrink-0 transform transition-all duration-200 active:scale-95"
+                  aria-label="Send message"
+                >
+                  <Send className="h-4 w-4" />
+                </button>
+              </div>
             </div>
-          </div>
-        </form>
-      </div>
-
-      {/* Task Panel - Hidden on mobile by default, can be toggled */}
-      <div className="hidden md:flex">
-        <TaskPanel onTaskAction={handleTaskAction} tasks={tasks} />
+            
+            {/* Quick Actions */}
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {['Add task', 'Schedule meeting', 'Set reminder', 'Help'].map((action) => (
+                <button
+                  key={action}
+                  type="button"
+                  onClick={() => setInputValue(action)}
+                  className="px-3 py-1.5 text-xs glass-morphism hover:bg-gray-200/80 dark:hover:bg-gray-600/80 rounded-full transition-all duration-200 whitespace-nowrap border border-gray-200/50 dark:border-gray-600/50 hover-lift animate-fade-in"
+                  style={{ animationDelay: `${['Add task', 'Schedule meeting', 'Set reminder', 'Help'].indexOf(action) * 100}ms` }}
+                >
+                  {action}
+                </button>
+              ))}
+            </div>
+          </form>
+        </div>
       </div>
 
       {/* Hidden file input */}
@@ -488,6 +609,14 @@ export default function ChatInterface({ isOpen, onClose }: ChatInterfaceProps) {
         onChange={handleFileChange}
         className="hidden"
         accept="image/*,application/pdf,.txt,.doc,.docx"
+      />
+
+      {/* Notification System */}
+      <ChatNotification
+        type={notification.type}
+        message={notification.message}
+        isVisible={notification.isVisible}
+        onClose={() => setNotification(prev => ({ ...prev, isVisible: false }))}
       />
     </div>
   );

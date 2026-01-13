@@ -1,0 +1,11 @@
+INFO:     Started server process [22001]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:53946 - "POST /api/register-session HTTP/1.1" 422 Unprocessable Content
+INFO:     127.0.0.1:35724 - "POST /api/register-session?user_id=test_user_123&token=test_token_123 HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [22001]
+
