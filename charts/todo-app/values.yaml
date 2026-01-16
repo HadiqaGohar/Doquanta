@@ -1,0 +1,146 @@
+# Default values for todo-app
+replicaCount: 2
+
+image:
+  repository: todo-app
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# PostgreSQL configuration
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: "postgres"
+    database: "todo_db"
+  primary:
+    persistence:
+      enabled: true
+      size: 1Gi
+
+# Redis configuration
+redis:
+  enabled: true
+  auth:
+    enabled: false
+  master:
+    persistence:
+      enabled: true
+      size: 1Gi
+
+# Kafka configuration
+kafka:
+  enabled: true
+  replicaCount: 1
+  zookeeper:
+    enabled: true
+  configmap:
+    server_properties: |
+      num.partitions=1
+      default.replication.factor=1
+      min.insync.replicas=1
+
+# Backend configuration
+backend:
+  image:
+    repository: todo-backend
+    tag: latest
+    pullPolicy: Always
+  service:
+    port: 8080
+  env:
+    DATABASE_URL: "postgresql://postgres:postgres@todo-app-postgresql:5432/todo_db"
+    REDIS_URL: "redis://todo-app-redis-master:6379"
+    NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+    KAFKA_BOOTSTRAP_SERVERS: "todo-app-kafka:9092"
+    PORT: "8080"
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  replicaCount: 2
+
+# Frontend configuration
+frontend:
+  image:
+    repository: todo-frontend
+    tag: latest
+    pullPolicy: Always
+  service:
+    port: 3000
+  env:
+    NEXT_PUBLIC_API_BASE_URL: "http://todo-app-backend-service:80"
+    NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+  replicaCount: 2

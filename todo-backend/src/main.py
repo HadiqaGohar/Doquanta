@@ -52,12 +52,21 @@ def on_startup():
     try:
         # 1. Create tables if they don't exist
         SQLModel.metadata.create_all(engine)
-        
+
         # 2. Run migrations to ensure all columns exist (important for production)
         from production_migration import run_migrations
         run_migrations()
+
+        # 3. Initialize Kafka producer
+        kafka_producer = get_kafka_producer()
+        print("DEBUG: Kafka producer initialized")
+
+        # 4. Initialize Dapr client
+        dapr_client = get_dapr_client()
+        print("DEBUG: Dapr client initialized")
     except Exception as e:
-        print(f"Error creating database tables or running migrations: {e}")
+        print(f"Error during startup: {e}")
+        traceback.print_exc()
 
 # --- Task Manager and Storage ---
 
@@ -82,6 +91,28 @@ class DatabaseStorage:
             session.add(db_task)
             session.commit()
             session.refresh(db_task)
+
+            # Publish task creation event to Kafka
+            try:
+                from .kafka_producer import get_kafka_producer
+                kafka_producer = get_kafka_producer()
+
+                task_data = {
+                    "id": db_task.id,
+                    "user_id": db_task.user_id,
+                    "title": db_task.title,
+                    "description": db_task.description,
+                    "completed": db_task.completed,
+                    "priority": db_task.priority,
+                    "category": db_task.category,
+                    "due_date": db_task.due_date.isoformat() if db_task.due_date else None,
+                    "created_at": db_task.created_at.isoformat()
+                }
+
+                kafka_producer.publish_task_event("task_created", task_data, user_id)
+            except Exception as e:
+                print(f"Error publishing task creation event: {e}")
+
             return db_task
 
 class TaskManager:
@@ -217,6 +248,8 @@ async def root():
     return {"message": "Welcome to DoQuanta Todo Backend API"}
 
 from .services.mcp_integration import MCPTodoService
+from .kafka_producer import get_kafka_producer
+from .dapr_integration import get_dapr_client
 import json
 
 @app.post("/api/chat/ask-ai")
