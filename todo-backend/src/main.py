@@ -58,12 +58,18 @@ def on_startup():
         run_migrations()
 
         # 3. Initialize Kafka producer
-        kafka_producer = get_kafka_producer()
-        print("DEBUG: Kafka producer initialized")
+        try:
+            kafka_producer = get_kafka_producer()
+            print("DEBUG: Kafka producer initialized")
+        except Exception as e:
+            print(f"WARNING: Failed to initialize Kafka producer: {e}")
 
         # 4. Initialize Dapr client
-        dapr_client = get_dapr_client()
-        print("DEBUG: Dapr client initialized")
+        try:
+            dapr_client = get_dapr_client()
+            print("DEBUG: Dapr client initialized")
+        except Exception as e:
+            print(f"WARNING: Failed to initialize Dapr client: {e}")
     except Exception as e:
         print(f"Error during startup: {e}")
         traceback.print_exc()

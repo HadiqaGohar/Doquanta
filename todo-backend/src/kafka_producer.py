@@ -23,14 +23,21 @@ class TaskEventProducer:
         bootstrap_servers = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
         logger.info(f"Initializing Kafka producer with servers: {bootstrap_servers}")
 
-        self.producer = KafkaProducer(
-            bootstrap_servers=bootstrap_servers,
-            value_serializer=lambda v: json.dumps(v).encode('utf-8'),
-            acks='all',  # Wait for all replicas to acknowledge
-            retries=3,
-            linger_ms=5,  # Small delay to allow batching
-            compression_type='snappy'  # Compress messages
-        )
+        try:
+            self.producer = KafkaProducer(
+                bootstrap_servers=bootstrap_servers,
+                value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+                acks='all',  # Wait for all replicas to acknowledge
+                retries=3,
+                linger_ms=5,  # Small delay to allow batching
+                compression_type='snappy',  # Compress messages
+                request_timeout_ms=5000, # 5 seconds timeout
+                api_version_auto_timeout_ms=5000 # 5 seconds metadata timeout
+            )
+            logger.info("Kafka producer initialized successfully")
+        except Exception as e:
+            logger.warning(f"Failed to initialize Kafka producer: {e}. Event publishing will be disabled.")
+            self.producer = None
 
         # Define Kafka topics
         self.task_events_topic = os.getenv('TASK_EVENTS_TOPIC', 'task-events')
@@ -46,6 +53,10 @@ class TaskEventProducer:
             task_data: Dictionary containing task information
             user_id: ID of the user associated with the task
         """
+        if not self.producer:
+            logger.warning(f"Kafka producer not available. Skipping {event_type} event.")
+            return
+
         event = {
             'event_type': event_type,
             'task_id': task_data.get('id'),
@@ -62,7 +73,8 @@ class TaskEventProducer:
                        f"partition {record_metadata.partition}, offset {record_metadata.offset}")
         except Exception as e:
             logger.error(f"Failed to publish {event_type} event: {str(e)}")
-            raise
+            # Don't raise, just log error to avoid crashing the app flow
+            # raise 
 
     def publish_reminder_event(self, task_id: int, title: str, due_at: str, remind_at: str, user_id: str):
         """
@@ -75,6 +87,10 @@ class TaskEventProducer:
             remind_at: Time when reminder should be sent
             user_id: ID of the user associated with the task
         """
+        if not self.producer:
+            logger.warning("Kafka producer not available. Skipping reminder event.")
+            return
+
         event = {
             'task_id': task_id,
             'title': title,
@@ -90,7 +106,7 @@ class TaskEventProducer:
                        f"partition {record_metadata.partition}, offset {record_metadata.offset}")
         except Exception as e:
             logger.error(f"Failed to publish reminder event: {str(e)}")
-            raise
+            # raise
 
     def publish_task_update(self, task_id: int, action: str, user_id: str):
         """
@@ -101,6 +117,10 @@ class TaskEventProducer:
             action: Action performed (e.g., 'completed', 'updated', 'deleted')
             user_id: ID of the user associated with the task
         """
+        if not self.producer:
+            logger.warning(f"Kafka producer not available. Skipping {action} event.")
+            return
+
         event = {
             'task_id': task_id,
             'action': action,
@@ -115,7 +135,7 @@ class TaskEventProducer:
                        f"partition {record_metadata.partition}, offset {record_metadata.offset}")
         except Exception as e:
             logger.error(f"Failed to publish task update event: {str(e)}")
-            raise
+            # raise
 
     def close(self):
         """
