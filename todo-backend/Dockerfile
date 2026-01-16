@@ -65,4 +65,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD curl -f http://localhost:${PORT}/docs || exit 1
 
 # Run the application
-CMD uvicorn src.main:app --host 0.0.0.0 --port ${PORT}
+CMD python -m uvicorn src.main:app --host 0.0.0.0 --port ${PORT}
