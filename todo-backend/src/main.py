@@ -434,4 +434,5 @@ app.websocket("/ws/{user_id}")(websocket_endpoint)
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("src.main:app", host="0.0.0.0", port=8000, reload=False)
+    port = int(os.getenv("PORT", 8080))  # Cloud Run PORT
+    uvicorn.run("src.main:app", host="0.0.0.0", port=port, reload=False)

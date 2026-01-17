@@ -10,11 +10,11 @@ class Settings(BaseSettings):
     )
 
     # Database settings
-    database_url: str 
+    database_url: str = "sqlite:///./todo.db"  # Default fallback 
 
 
     # Better Auth settings
-    better_auth_secret: str
+    better_auth_secret: str = "default_secret_for_dev"  # Default fallback
     jwt_algorithm: str = "HS256"
 
     # Application settings
