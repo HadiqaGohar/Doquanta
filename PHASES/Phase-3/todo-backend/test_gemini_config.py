@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 async def test_gemini():
-    api_key = "AIzaSyAKX1YoaOquopCq5r6myT6uWKPasqfPK2E"
+    api_key = os.getenv("GEMINI_API_KEY")
     # Testing different base URLs
     base_urls = [
         "https://generativelanguage.googleapis.com/v1beta/openai/",

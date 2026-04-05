@@ -170,7 +170,7 @@ async def register_session(request: RegisterSessionRequest):
 
 gemini_api_key = os.getenv("GEMINI_API_KEY")
 if not gemini_api_key or gemini_api_key == "dummy-key-for-development":
-    gemini_api_key = "AIzaSyAKX1YoaOquopCq5r6myT6uWKPasqfPK2E"
+    gemini_api_key = os.getenv("GEMINI_API_KEY")
 
 gemini_base_url = "https://generativelanguage.googleapis.com/v1beta/openai/"
 
